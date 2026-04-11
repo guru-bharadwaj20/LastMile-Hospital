@@ -390,7 +390,7 @@ export function useNetworkSimulation() {
     }));
   }, []);
 
-  // ── Action: Toggle Node Failure (Layer 3 prep) ───────────────
+  // ── Action: Toggle Node Failure ───────────────────────────────
   const toggleNodeFailure = useCallback((name) => {
     setState(prev => {
       const node = prev.nodes[name];
@@ -407,18 +407,37 @@ export function useNetworkSimulation() {
         return s;
       });
 
+      // Count active streams from this department
+      const deptStreams = prev.activeStreams.filter(s => s.from === name);
+
       const logEntry = {
         id: uid('evt'),
         timestamp: formatTime(),
         priority: newActive ? 'P4' : 'P1',
-        label: newActive ? `Node ${name} back online` : `Node ${name} offline — stream suspended`,
+        label: newActive
+          ? `✓ NODE RESTORED  ${name} back online — streams resuming`
+          : `⚠ NODE FAILURE  ${name} offline — stream suspended — 0 packets routable`,
         deliveredIn: null,
         status: newActive ? 'delivered' : 'dropped',
       };
 
+      // Determine mode: if restoring and no other nodes are offline, return to normal/stressed
+      let newMode;
+      if (newActive) {
+        const anyOtherOffline = Object.entries(newNodes).some(([n, s]) => n !== name && !s.active);
+        if (anyOtherOffline) {
+          newMode = 'failure';
+        } else {
+          const hasStress = updatedStreams.some(s => s.id.startsWith('stress-'));
+          newMode = hasStress ? 'stressed' : 'normal';
+        }
+      } else {
+        newMode = 'failure';
+      }
+
       return {
         ...prev,
-        mode: newActive ? prev.mode : 'failure',
+        mode: newMode,
         nodes: newNodes,
         activeStreams: updatedStreams,
         eventLog: [logEntry, ...prev.eventLog].slice(0, 50),

@@ -39,8 +39,8 @@ export default function NetworkLoadMeter({ state }) {
         <div
           className="load-meter-bar-fill"
           style={{
-            height: `${load}%`,
-            background: `linear-gradient(to top, ${fillColor}, ${fillColor}aa)`,
+            transform: `scaleY(${Math.max(0, Math.min(load, 100)) / 100})`,
+            background: fillColor,
             boxShadow: `0 0 8px ${fillColor}66`,
           }}
         />
@@ -48,7 +48,7 @@ export default function NetworkLoadMeter({ state }) {
         <div
           className="load-meter-bar-value"
           style={{
-            bottom: `${load}%`,
+            bottom: `calc(${Math.max(0, Math.min(load, 100))}% - 2px)`,
             color: fillColor,
           }}
         >

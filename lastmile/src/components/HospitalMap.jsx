@@ -24,7 +24,7 @@ export default function HospitalMap({ nodes, mode }) {
       <svg
         ref={svgRef}
         className="hospital-map-svg"
-        viewBox="0 0 800 420"
+        viewBox="0 0 800 450"
         preserveAspectRatio="xMidYMid meet"
       >
         {/* Background grid pattern */}
@@ -57,7 +57,7 @@ export default function HospitalMap({ nodes, mode }) {
         </defs>
 
         {/* Grid background */}
-        <rect width="800" height="420" fill="url(#grid)" />
+        <rect width="800" height="450" fill="url(#grid)" />
 
         {/* Network edges — lines from each department to server */}
         {departments.map(dept => {
@@ -152,9 +152,9 @@ export default function HospitalMap({ nodes, mode }) {
 
         {/* Status text bottom-right */}
         <text
-          x="780"
-          y="412"
-          textAnchor="end"
+          x="400"
+          y="440"
+          textAnchor="middle"
           style={{
             fontFamily: "'JetBrains Mono', monospace",
             fontSize: '9px',
@@ -162,7 +162,7 @@ export default function HospitalMap({ nodes, mode }) {
             letterSpacing: '1px',
           }}
         >
-          FLOOR PLAN — BUILDING A — LEVEL 2
+          FLOOR PLAN - BUILDING A - LEVEL 2
         </text>
       </svg>
     </div>

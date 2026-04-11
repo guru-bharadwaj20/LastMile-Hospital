@@ -142,17 +142,26 @@ export function useNetworkSimulation() {
     const interval = setInterval(() => {
       setState(prev => {
         const elapsed = (Date.now() - startTimeRef.current) / 1000;
+        const totalNodeCount = Object.keys(prev.nodes).length;
+        const activeNodeCount = Object.values(prev.nodes).filter(n => n.active).length;
+        const activeRatio = totalNodeCount > 0 ? activeNodeCount / totalNodeCount : 0;
         let targetLoad;
 
-        if (prev.mode === 'normal') {
+        if (activeNodeCount === 0) {
+          // No departments online means no traffic can be generated.
+          targetLoad = 0;
+        } else if (prev.mode === 'normal') {
           // Sine wave oscillation: 40–50%, period ~20s
           targetLoad = 45 + 5 * Math.sin((2 * Math.PI * elapsed) / 20);
         } else if (prev.mode === 'stressed') {
           // Hold at 85–92%
           targetLoad = 88 + 4 * Math.sin((2 * Math.PI * elapsed) / 8);
         } else if (prev.mode === 'critical') {
-          // Critical spike handled separately
-          return prev;
+          // Keep critical alerts visually high while nodes are online.
+          targetLoad = 95;
+        } else if (prev.mode === 'failure') {
+          // Degrade load based on how many nodes are still online.
+          targetLoad = Math.max(8, Math.round(30 * activeRatio));
         } else {
           targetLoad = prev.networkLoad;
         }
@@ -162,7 +171,9 @@ export function useNetworkSimulation() {
 
         // Update bandwidth allocation based on mode
         let bw;
-        if (prev.mode === 'stressed' || prev.mode === 'critical') {
+        if (activeNodeCount === 0) {
+          bw = { p1: 0, p2: 0, p3: 0, p4: 0, p5: 0 };
+        } else if (prev.mode === 'stressed' || prev.mode === 'critical') {
           bw = { p1: 35, p2: 25, p3: 20, p4: 12, p5: 8 };
         } else {
           bw = { p1: 25, p2: 20, p3: 25, p4: 18, p5: 12 };

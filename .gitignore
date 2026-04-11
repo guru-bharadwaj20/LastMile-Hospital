@@ -11,12 +11,24 @@ env/
 # Python tool caches
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
 
 # Node.js / React (lastmile project)
 lastmile/node_modules/
 lastmile/dist/
 lastmile/dist-ssr/
 lastmile/*.local
+lastmile/.vite/
+lastmile/coverage/
+lastmile/.cache/
+.eslintcache
+
+# Environment files
+.env
+.env.*
+!.env.example
 
 # Logs
 logs
@@ -32,6 +44,7 @@ lerna-debug.log*
 !.vscode/extensions.json
 .idea/
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj

@@ -64,112 +64,134 @@ const TRIGGERS = [
 
 const PRIORITY_LEVELS = ['P1', 'P2', 'P3', 'P4', 'P5'];
 
-export default function AlertPanel({ state, actions }) {
-  const handleTrigger = (trigger) => {
-    if (trigger.action === 'triggerAlert') {
-      actions.triggerAlert(trigger.param);
-    } else if (trigger.action === 'simulateStress') {
-      actions.simulateStress();
-    } else if (trigger.action === 'resetNetwork') {
-      actions.resetNetwork();
-    }
-  };
+function handleTriggerAction(actions, trigger) {
+  if (trigger.action === 'triggerAlert') {
+    actions.triggerAlert(trigger.param);
+  } else if (trigger.action === 'simulateStress') {
+    actions.simulateStress();
+  } else if (trigger.action === 'resetNetwork') {
+    actions.resetNetwork();
+  }
+}
 
+export function EmergencyConsoleSection({ state, actions }) {
+  return (
+    <div>
+      {TRIGGERS.map((trigger) => {
+        const Icon = trigger.lucideIcon;
+        const isDisabled =
+          (trigger.action === 'simulateStress' && (state.mode === 'stressed' || state.mode === 'critical'));
+        return (
+          <motion.button
+            key={trigger.id}
+            id={`trigger-${trigger.id}`}
+            className={`trigger-btn ${trigger.className}`}
+            onClick={() => handleTriggerAction(actions, trigger)}
+            whileTap={{ scale: 0.97 }}
+            disabled={isDisabled}
+            style={isDisabled ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
+          >
+            <span className="trigger-btn-icon">{trigger.icon}</span>
+            <span>{trigger.label}</span>
+            <Icon
+              size={14}
+              style={{
+                marginLeft: 'auto',
+                opacity: 0.4,
+              }}
+            />
+          </motion.button>
+        );
+      })}
+    </div>
+  );
+}
+
+export function ActiveAlertsSection({ state }) {
+  return (
+    <div>
+      <AnimatePresence>
+        {state.activeAlerts.length === 0 && (
+          <div style={{
+            fontSize: '10px',
+            color: 'var(--text-dim)',
+            textAlign: 'center',
+            padding: '12px',
+            letterSpacing: '1px',
+          }}>
+            NO ACTIVE ALERTS
+          </div>
+        )}
+        {state.activeAlerts.map((alert) => (
+          <AlertItem key={alert.id} alert={alert} />
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+export function PriorityConfigurationSection({ state, actions }) {
+  return (
+    <table className="priority-table">
+      <tbody>
+        {state.priorityConfig.map((item, index) => (
+          <tr key={index}>
+            <td>
+              <span
+                className="priority-dot"
+                style={{ background: item.color }}
+              />
+              <span style={{ color: 'var(--text-muted)' }}>{item.type}</span>
+            </td>
+            <td className="priority-level">
+              <select
+                className="priority-select"
+                value={item.level}
+                onChange={(e) => actions.updatePriorityConfig(index, e.target.value)}
+                style={{
+                  background: 'var(--bg-primary)',
+                  color: item.color,
+                  border: `1px solid ${item.color}44`,
+                  borderRadius: '3px',
+                  padding: '2px 4px',
+                  fontFamily: "'Rajdhani', sans-serif",
+                  fontWeight: 700,
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                  outline: 'none',
+                }}
+              >
+                {PRIORITY_LEVELS.map(level => (
+                  <option key={level} value={level}>{level}</option>
+                ))}
+              </select>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+export default function AlertPanel({ state, actions }) {
   return (
     <div>
       {/* Section 1: Manual Trigger Buttons */}
       <div style={{ marginBottom: '24px' }}>
         <h3 className="alert-section-title">Emergency Console</h3>
-        {TRIGGERS.map((trigger) => {
-          const Icon = trigger.lucideIcon;
-          const isDisabled =
-            (trigger.action === 'simulateStress' && (state.mode === 'stressed' || state.mode === 'critical'));
-          return (
-            <motion.button
-              key={trigger.id}
-              id={`trigger-${trigger.id}`}
-              className={`trigger-btn ${trigger.className}`}
-              onClick={() => handleTrigger(trigger)}
-              whileTap={{ scale: 0.97 }}
-              disabled={isDisabled}
-              style={isDisabled ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
-            >
-              <span className="trigger-btn-icon">{trigger.icon}</span>
-              <span>{trigger.label}</span>
-              <Icon
-                size={14}
-                style={{
-                  marginLeft: 'auto',
-                  opacity: 0.4,
-                }}
-              />
-            </motion.button>
-          );
-        })}
+        <EmergencyConsoleSection state={state} actions={actions} />
       </div>
 
       {/* Section 2: Active Alerts */}
       <div style={{ marginBottom: '24px' }}>
         <h3 className="alert-section-title">Active Alerts</h3>
-        <AnimatePresence>
-          {state.activeAlerts.length === 0 && (
-            <div style={{
-              fontSize: '10px',
-              color: 'var(--text-dim)',
-              textAlign: 'center',
-              padding: '12px',
-              letterSpacing: '1px',
-            }}>
-              NO ACTIVE ALERTS
-            </div>
-          )}
-          {state.activeAlerts.map((alert) => (
-            <AlertItem key={alert.id} alert={alert} />
-          ))}
-        </AnimatePresence>
+        <ActiveAlertsSection state={state} />
       </div>
 
       {/* Section 3: Priority Config */}
       <div>
         <h3 className="alert-section-title">Priority Configuration</h3>
-        <table className="priority-table">
-          <tbody>
-            {state.priorityConfig.map((item, index) => (
-              <tr key={index}>
-                <td>
-                  <span
-                    className="priority-dot"
-                    style={{ background: item.color }}
-                  />
-                  <span style={{ color: 'var(--text-muted)' }}>{item.type}</span>
-                </td>
-                <td className="priority-level">
-                  <select
-                    className="priority-select"
-                    value={item.level}
-                    onChange={(e) => actions.updatePriorityConfig(index, e.target.value)}
-                    style={{
-                      background: 'var(--bg-primary)',
-                      color: item.color,
-                      border: `1px solid ${item.color}44`,
-                      borderRadius: '3px',
-                      padding: '2px 4px',
-                      fontFamily: "'Rajdhani', sans-serif",
-                      fontWeight: 700,
-                      fontSize: '11px',
-                      cursor: 'pointer',
-                      outline: 'none',
-                    }}
-                  >
-                    {PRIORITY_LEVELS.map(level => (
-                      <option key={level} value={level}>{level}</option>
-                    ))}
-                  </select>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <PriorityConfigurationSection state={state} actions={actions} />
       </div>
     </div>
   );

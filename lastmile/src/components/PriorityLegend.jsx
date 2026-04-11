@@ -14,18 +14,20 @@ export default function PriorityLegend() {
   return (
     <div className="priority-legend">
       <div className="legend-title">Priority</div>
-      {LEGEND_ITEMS.map((item) => (
-        <div key={item.label} className="legend-item">
-          <span
-            className="legend-color"
-            style={{
-              background: item.color,
-              boxShadow: `0 0 4px ${item.color}44`,
-            }}
-          />
-          <span>{item.label}</span>
-        </div>
-      ))}
+      <div className="legend-items-row">
+        {LEGEND_ITEMS.map((item) => (
+          <div key={item.label} className="legend-item">
+            <span
+              className="legend-color"
+              style={{
+                background: item.color,
+                boxShadow: `0 0 4px ${item.color}44`,
+              }}
+            />
+            <span>{item.label}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

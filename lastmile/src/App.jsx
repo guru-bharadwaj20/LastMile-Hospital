@@ -1,34 +1,31 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, Server, Zap } from 'lucide-react';
+import { ChevronDown, Zap } from 'lucide-react';
 import HospitalMap from './components/HospitalMap';
 import TrafficStream from './components/TrafficStream';
 import NetworkLoadMeter from './components/NetworkLoadMeter';
-import AlertPanel from './components/AlertPanel';
+import { ActiveAlertsSection, EmergencyConsoleSection, PriorityConfigurationSection } from './components/AlertPanel';
 import EventLog from './components/EventLog';
 import PriorityLegend from './components/PriorityLegend';
 import NodeFailurePanel from './components/NodeFailurePanel';
 import ComparisonView from './components/ComparisonView';
-import DemoController from './components/DemoController';
-import { useNetworkSimulation, DEPARTMENTS } from './simulation/networkState';
+import { useNetworkSimulation } from './simulation/networkState';
 
 /**
  * App — Main application layout for LastMile Hospital Network Triage System.
  * Layer 3: Full simulation with failure, comparison, demo mode, and polish.
  */
 export default function App() {
-  const [clock, setClock] = useState(formatTime());
   const { state, actions } = useNetworkSimulation();
   const [showComparison, setShowComparison] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-
-  // Live clock
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setClock(formatTime());
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
+  const [openPanels, setOpenPanels] = useState({
+    emergency: true,
+    infrastructure: false,
+    eventLog: false,
+    priority: false,
+    alerts: false,
+  });
 
   // Mobile detection
   useEffect(() => {
@@ -37,10 +34,6 @@ export default function App() {
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
-
-  // Count active nodes
-  const totalNodes = Object.keys(state.nodes).length + 1; // +1 for server
-  const activeNodes = Object.values(state.nodes).filter(n => n.active).length + 1;
 
   // Check for critical node offline (ICU or ER)
   const criticalOfflineNodes = Object.entries(state.nodes)
@@ -58,6 +51,12 @@ export default function App() {
 
   const openComparison = useCallback(() => setShowComparison(true), []);
   const closeComparison = useCallback(() => setShowComparison(false), []);
+  const togglePanel = useCallback((panelKey) => {
+    setOpenPanels((prev) => ({
+      ...prev,
+      [panelKey]: !prev[panelKey],
+    }));
+  }, []);
 
   // Mobile message
   if (isMobile) {
@@ -92,11 +91,16 @@ export default function App() {
             >
               LASTMILE
             </motion.h1>
-            <span className="header-tagline">Hospital Network Triage System</span>
           </div>
 
-          <div className="header-status">
-            {/* Show Comparison Button */}
+          <div className="header-center">
+            <div className="status-item" id="status-network">
+              <span className={`status-dot ${!isNetworkActive ? 'inactive' : ''} ${state.mode === 'stressed' ? 'stressed' : ''} ${state.mode === 'critical' ? 'critical-dot' : ''}`} />
+              <span>{modeLabel}</span>
+            </div>
+          </div>
+
+          <div className="header-actions">
             <motion.button
               className="header-comparison-btn"
               onClick={openComparison}
@@ -107,63 +111,80 @@ export default function App() {
               <Zap size={12} />
               <span>SHOW COMPARISON</span>
             </motion.button>
-
-            <div className="status-item" id="status-network">
-              <span className={`status-dot ${!isNetworkActive ? 'inactive' : ''} ${state.mode === 'stressed' ? 'stressed' : ''} ${state.mode === 'critical' ? 'critical-dot' : ''}`} />
-              <span>{modeLabel}</span>
-            </div>
-            <div className="status-item" id="status-mode">
-              <span className={`mode-badge mode-${state.mode}`}>
-                {state.mode.toUpperCase()}
-              </span>
-            </div>
-            <div className="status-item" id="status-clock">
-              <Clock size={13} style={{ opacity: 0.5 }} />
-              <span>{clock}</span>
-            </div>
-            <div className="status-item" id="status-nodes">
-              <Server size={13} style={{ opacity: 0.5 }} />
-              <span>NODES: {activeNodes}/{totalNodes}</span>
-            </div>
           </div>
         </header>
 
-        {/* ── Main Area (Map + Load Meter) ─────────────────── */}
+        {/* ── Main Area (65/35 Split) ──────────────────────── */}
         <main className="app-main" id="main-viewport">
-          <NetworkLoadMeter state={state} />
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            {/* Critical node warning banner */}
-            <AnimatePresence>
-              {criticalOfflineNodes.length > 0 && (
-                <motion.div
-                  className="critical-warning-banner"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  ⚠ CRITICAL NODE OFFLINE — P1 traffic from {criticalOfflineNodes.join(', ')} unroutable
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <div style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0 }}>
-              <HospitalMap nodes={state.nodes} mode={state.mode} />
-              <TrafficStream activeStreams={state.activeStreams} mode={state.mode} />
+          <section className="left-pane">
+            <NetworkLoadMeter state={state} />
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+              {/* Critical node warning banner */}
+              <AnimatePresence>
+                {criticalOfflineNodes.length > 0 && (
+                  <motion.div
+                    className="critical-warning-banner"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    ⚠ CRITICAL NODE OFFLINE — P1 traffic from {criticalOfflineNodes.join(', ')} unroutable
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <div style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0 }}>
+                <HospitalMap nodes={state.nodes} mode={state.mode} />
+                <TrafficStream activeStreams={state.activeStreams} mode={state.mode} />
+              </div>
+              <PriorityLegend />
             </div>
-            <PriorityLegend />
-          </div>
+          </section>
+
+          <aside className="app-sidebar" id="alert-panel">
+            <AccordionSection
+              title="Emergency Control"
+              isOpen={openPanels.emergency}
+              onToggle={() => togglePanel('emergency')}
+            >
+              <EmergencyConsoleSection state={state} actions={actions} />
+            </AccordionSection>
+
+            <AccordionSection
+              title="Infrastructure Access"
+              isOpen={openPanels.infrastructure}
+              onToggle={() => togglePanel('infrastructure')}
+            >
+              <NodeFailurePanel nodes={state.nodes} actions={actions} compact />
+            </AccordionSection>
+
+            <AccordionSection
+              title="Network Event Log"
+              isOpen={openPanels.eventLog}
+              onToggle={() => togglePanel('eventLog')}
+            >
+              <div className="sidebar-event-log-wrap">
+                <EventLog eventLog={state.eventLog} onShowComparison={openComparison} />
+              </div>
+            </AccordionSection>
+
+            <AccordionSection
+              title="Priority Configuration"
+              isOpen={openPanels.priority}
+              onToggle={() => togglePanel('priority')}
+            >
+              <PriorityConfigurationSection state={state} actions={actions} />
+            </AccordionSection>
+
+            <AccordionSection
+              title="Active Alerts"
+              isOpen={openPanels.alerts}
+              onToggle={() => togglePanel('alerts')}
+            >
+              <ActiveAlertsSection state={state} />
+            </AccordionSection>
+          </aside>
         </main>
-
-        {/* ── Right Sidebar ────────────────────────────────── */}
-        <aside className="app-sidebar" id="alert-panel">
-          <AlertPanel state={state} actions={actions} onShowComparison={openComparison} />
-          <NodeFailurePanel nodes={state.nodes} actions={actions} />
-        </aside>
-
-        {/* ── Bottom Event Log ─────────────────────────────── */}
-        <footer className="app-footer" id="event-log">
-          <EventLog eventLog={state.eventLog} onShowComparison={openComparison} />
-        </footer>
       </div>
 
       {/* ── Comparison Overlay ──────────────────────────────── */}
@@ -172,22 +193,36 @@ export default function App() {
         onClose={closeComparison}
         state={state}
       />
-
-      {/* ── Demo Controller ────────────────────────────────── */}
-      <DemoController
-        actions={actions}
-        onShowComparison={openComparison}
-        onCloseComparison={closeComparison}
-      />
     </>
   );
 }
 
-function formatTime() {
-  const now = new Date();
-  return now.toLocaleTimeString('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
+function AccordionSection({ title, isOpen, onToggle, children }) {
+  return (
+    <section className="sidebar-accordion-section">
+      <button className="sidebar-accordion-header" onClick={onToggle}>
+        <span>{title}</span>
+        <ChevronDown
+          size={14}
+          className={`sidebar-accordion-chevron ${isOpen ? 'open' : ''}`}
+        />
+      </button>
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            className="sidebar-accordion-body"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="sidebar-accordion-inner">
+              {children}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
 }
+

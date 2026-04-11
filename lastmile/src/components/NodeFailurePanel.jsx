@@ -7,11 +7,11 @@ import { DEPARTMENTS } from '../simulation/networkState';
  */
 const departments = DEPARTMENTS.filter(d => !d.isServer);
 
-export default function NodeFailurePanel({ nodes, actions }) {
+export default function NodeFailurePanel({ nodes, actions, compact = false }) {
   return (
-    <div style={{ marginBottom: '24px' }}>
+    <div style={{ marginBottom: compact ? '0' : '24px' }}>
       <h3 className="alert-section-title" style={{ color: 'var(--p1-critical)' }}>
-        Infrastructure Failure
+        Infrastructure Access
       </h3>
       <div className="node-failure-list">
         {departments.map(dept => {

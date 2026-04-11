@@ -1,4 +1,4 @@
-# LastMile — Hospital Network Triage System
+# LastMile Hospital Network Triage System
 
 > *"Hospitals triage patients by urgency. LastMile triages packets the same way."*
 
@@ -6,31 +6,31 @@
 
 ## The Problem
 
-Every hospital runs a single shared network carrying wildly different types of traffic simultaneously — cardiac arrest alerts, ventilator alarms, ICU vitals, X-ray image transfers, pharmacy orders, administrative file uploads, and staff WiFi. On a conventional network, all of this traffic is treated equally. A life-critical cardiac alert can get stuck behind a radiology image upload during peak hours.
+Every hospital runs a single shared network carrying wildly different types of traffic simultaneously. This includes cardiac arrest alerts, ventilator alarms, ICU vitals, X ray image transfers, pharmacy orders, administrative file uploads, and staff WiFi. On a conventional network, all of this traffic is treated equally. A life critical cardiac alert can get stuck behind a radiology image upload during peak hours.
 
 At 90% network congestion, a standard hospital network delivers a cardiac arrest alert in approximately **340–470ms**. In emergency medicine, that delay is clinically significant. The difference between a nurse receiving an alert in 11ms versus 400ms can determine whether intervention happens in time.
 
-LastMile solves this by making the hospital network behave like a hospital — prioritizing traffic exactly the way clinicians triage patients. Critical alerts always get through first, at full speed, regardless of what else is on the network.
+LastMile solves this by making the hospital network behave like a hospital, prioritizing traffic exactly the way clinicians triage patients. Critical alerts always get through first, at full speed, regardless of what else is on the network.
 
 ---
 
 ## How SDN Makes This Possible
 
-Traditional networks are decentralized — each switch makes its own forwarding decision with no global awareness. No single component has the authority to say "right now, give everything to this one packet."
+Traditional networks are decentralized. Each switch makes its own forwarding decision with no global awareness. No single component has the authority to say "right now, give everything to this one packet."
 
-**Software-Defined Networking (SDN)** changes this fundamentally. A central controller maintains full visibility of the entire network topology and can reprogram every switch in real time via OpenFlow flow rules. This is the architectural capability that makes LastMile possible.
+**Software Defined Networking (SDN)** changes this fundamentally. A central controller maintains full visibility of the entire network topology and can reprogram every switch in real time via OpenFlow flow rules. This is the architectural capability that makes LastMile possible.
 
-This project is built directly on top of an SDN static routing implementation using **Mininet** and **Ryu Controller**. That project demonstrated the core mechanism: a controller that installs flow rules on Open vSwitch instances to deterministically control packet paths. LastMile takes that same mechanism and gives it a clinical purpose — instead of routing H1→H3 along a fixed path, the controller routes `CARDIAC_ALERT → PRIORITY_QUEUE_1` and `STAFF_NETFLIX → PRIORITY_QUEUE_5`, in real time, adapting to network load.
+This project is built directly on top of an SDN static routing implementation using **Mininet** and **Ryu Controller**. That project demonstrated the core mechanism: a controller that installs flow rules on Open vSwitch instances to deterministically control packet paths. LastMile takes that same mechanism and gives it a clinical purpose. Instead of routing H1→H3 along a fixed path, the controller routes `CARDIAC_ALERT → PRIORITY_QUEUE_1` and `STAFF_NETFLIX → PRIORITY_QUEUE_5` in real time, adapting to network load.
 
 | SDN Project Concept | LastMile Application |
 |---|---|
 | Controller installs flow rules on switches | Priority engine programs traffic lanes per alert type |
 | Static path: H1 → S1 → S2 → S3 → H3 | Dynamic lane: Cardiac alert → guaranteed fast path |
 | Flow deletion simulates link failure | Node kill simulates department network failure |
-| Flow reinstall = path recovery | Node restore = stream resumption with self-healing |
+| Flow reinstall = path recovery | Node restore = stream resumption with self healing |
 | Regression test: paths unchanged after reinstall | Recovery test: P1 delivery time unchanged after failure |
 
-In a production deployment, the LastMile simulation engine would be replaced by direct API calls to the Ryu controller, which would install actual OpenFlow rules on OVS switches — enforcing these priorities at the hardware level across the hospital network infrastructure.
+In a production deployment, the LastMile simulation engine would be replaced by direct API calls to the Ryu controller, which would install actual OpenFlow rules on OVS switches, enforcing these priorities at the hardware level across the hospital network infrastructure.
 
 ---
 
@@ -105,31 +105,31 @@ Production Layer (deployment):  Ryu Controller → OpenFlow → OVS switches
 ### Design System
 | Element | Choice |
 |---|---|
-| Display font | Rajdhani — military/technical character |
-| Monospace font | JetBrains Mono — clinical data readability |
-| Theme | Dark medical/industrial — mission control aesthetic |
-| Color language | Priority-coded: red (P1) → orange → amber → green → grey (P5) |
+| Display font | Rajdhani with military and technical character |
+| Monospace font | JetBrains Mono with clinical data readability |
+| Theme | Dark medical and industrial mission control aesthetic |
+| Color language | Priority coded red (P1) to grey (P5) |
 
 ---
 
 ## Where This Is Applicable
 
 ### Immediate Use Cases
-- **Government and private hospitals** with shared network infrastructure and no traffic prioritization
-- **ICUs and emergency departments** where alert latency directly affects clinical outcomes
-- **Rural telemedicine kiosks** (e.g., eSanjeevani) where bandwidth is limited and doctor consultation traffic competes with administrative traffic
-- **Surgical suites** requiring guaranteed monitoring data transmission during procedures
+1. **Government and private hospitals** with shared network infrastructure and no traffic prioritization
+2. **ICUs and emergency departments** where alert latency directly affects clinical outcomes
+3. **Rural telemedicine kiosks** (for example eSanjeevani) where bandwidth is limited and doctor consultation traffic competes with administrative traffic
+4. **Surgical suites** requiring guaranteed monitoring data transmission during procedures
 
 ### Broader Applications
-- Any environment where multiple traffic classes share a constrained network and priority matters: air traffic control, disaster relief coordination, military field communications, industrial SCADA systems
+1. Any environment where multiple traffic classes share a constrained network and priority matters: air traffic control, disaster relief coordination, military field communications, industrial SCADA systems
 
 ---
 
-## Running the Demo
+## Running the App
 
 ### Prerequisites
-- Node.js 18+
-- npm
+1. Node.js 18+
+2. npm
 
 ### Setup
 
@@ -147,29 +147,33 @@ Opens on Localhost
 npm run build
 ```
 
-Open `dist/index.html` directly in any browser — no Node.js or server needed.
+Open `dist/index.html` directly in any browser.
 
 ---
 
-## Demo Guide
+## User Guide
 
-### Automated Demo Mode
-Click **[▶ RUN DEMO]** in the bottom-right corner. The system runs a fully scripted sequence — network stress, cardiac alert, comparison view, node failure, and recovery — hands-free. Designed for live presentations.
-
-### Manual Exploration
+Run Demo feature has been removed from the project.
 
 | Action | What to observe |
 |---|---|
-| Click **SIMULATE NETWORK STRESS** | Load climbs to 85–92%, P4/P5 particles slow and drop |
-| Click **CARDIAC ARREST — ICU Bed 4** | P1 particle shoots through instantly, ~11ms delivery logged |
-| Click **SHOW COMPARISON** | Side-by-side: ~11ms with LastMile vs ~400ms without |
-| Click **KILL NODE** on any department | Node goes dark, streams suspend, header count updates |
-| Click **RESTORE NODE** | Node pulses back, streams resume, self-healing confirmed |
-| Scroll right panel down | Priority Configuration — change P2 to P1 and observe behavior shift |
+| Click **SIMULATE NETWORK STRESS** | Load climbs to 85–92%, P4 and P5 traffic degrades |
+| Click **CARDIAC ARREST — ICU Bed 4** | P1 alert reaches server in low latency |
+| Click **SHOW COMPARISON** | Side by side view of with and without triage |
+| Open **Infrastructure Access** panel and click **KILL NODE** | Node goes dark, streams suspend, event log updates |
+| Click **RESTORE** | Node recovers and streams resume |
+| Turn off all department nodes | Network load drops to 0% |
+
+Current right pane order:
+1. Emergency Control
+2. Infrastructure Access
+3. Network Event Log
+4. Priority Configuration
+5. Active Alerts
 
 ---
 
-## SDN Foundation — Technical Reference
+## SDN Foundation Technical Reference
 
 The Mininet topology underlying this project:
 
@@ -179,17 +183,17 @@ H1 (10.0.0.1) --|         |-- H3 (10.0.0.3)
 H2 (10.0.0.2) --|         |-- H4 (10.0.0.4)
 ```
 
-The `static_controller.py` Ryu controller installs OpenFlow 1.3 flow rules that deterministically route traffic between hosts. This same controller architecture, extended with priority queuing and dynamic rule installation, is what LastMile would use in a real hospital deployment — replacing the JavaScript simulation engine with actual OVS queue configuration and flow rule management via the Ryu REST API.
+The `SDN_files/static_controller.py` Ryu controller installs OpenFlow 1.3 flow rules that deterministically route traffic between hosts. This same controller architecture, extended with priority queuing and dynamic rule installation, is what LastMile would use in a real hospital deployment, replacing the JavaScript simulation engine with actual OVS queue configuration and flow rule management via the Ryu REST API.
 
 ### Running the SDN Layer
 
 ```bash
-# Terminal 1 — Start Ryu controller
+# Terminal 1: Start Ryu controller
 source ~/ryu-env/bin/activate
-ryu-manager static_controller.py
+ryu-manager SDN_files/static_controller.py
 
-# Terminal 2 — Start Mininet topology
-sudo mn --custom static_topo.py --topo statictopo \
+# Terminal 2: Start Mininet topology
+sudo mn --custom SDN_files/static_topo.py --topo statictopo \
   --controller remote,port=6633 \
   --switch ovsk,protocols=OpenFlow13
 

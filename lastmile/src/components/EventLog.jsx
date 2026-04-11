@@ -4,9 +4,9 @@ import { PRIORITY_COLORS } from '../simulation/networkState';
 
 /**
  * EventLog — Bottom bar with scrolling real-time network event entries.
- * Layer 2: Wired to live event log from simulation.
+ * Layer 3: Includes "See why this matters" button on P1 delivered entries.
  */
-export default function EventLog({ eventLog }) {
+export default function EventLog({ eventLog, onShowComparison }) {
   const scrollRef = useRef(null);
 
   // Auto-scroll to top when new entry appears
@@ -54,16 +54,17 @@ export default function EventLog({ eventLog }) {
       <div className="event-log-entries" ref={scrollRef}>
         <AnimatePresence initial={false}>
           {eventLog.map((event) => {
-            const color = PRIORITY_COLORS[event.priority] || '#4b5563';
+            const color = PRIORITY_COLORS[event.priority] || 'var(--p5-background)';
             const isDropped = event.status === 'dropped';
             const isCritical = event.priority === 'P1';
+            const showComparisonBtn = isCritical && event.status === 'delivered' && onShowComparison;
 
             return (
               <motion.div
                 key={event.id}
                 className={`event-entry ${isCritical ? 'critical-flash' : ''}`}
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
               >
@@ -80,6 +81,14 @@ export default function EventLog({ eventLog }) {
                   style={isDropped ? { color: 'var(--text-dim)' } : {}}
                 >
                   {event.label}
+                  {showComparisonBtn && (
+                    <button
+                      className="event-comparison-btn"
+                      onClick={onShowComparison}
+                    >
+                      See why this matters →
+                    </button>
+                  )}
                 </span>
                 <span
                   className="event-latency"

@@ -1,11 +1,11 @@
-import { MOCK_NETWORK_LOAD, MOCK_BANDWIDTH } from '../simulation/networkState';
-
 /**
  * NetworkLoadMeter — Vertical gauge showing 0-100% network load
  * with priority bandwidth breakdown bars.
+ * Layer 2: Wired to live simulation state.
  */
-export default function NetworkLoadMeter() {
-  const load = MOCK_NETWORK_LOAD;
+export default function NetworkLoadMeter({ state }) {
+  const load = state.networkLoad;
+  const bw = state.bandwidthAllocation;
 
   // Determine color based on load level
   const getLoadColor = (value) => {
@@ -16,6 +16,14 @@ export default function NetworkLoadMeter() {
 
   const fillColor = getLoadColor(load);
   const isHighLoad = load >= 80;
+
+  const bandwidthBars = [
+    { level: 'P1', color: '#ff2d2d', share: bw.p1 },
+    { level: 'P2', color: '#ff6b2d', share: bw.p2 },
+    { level: 'P3', color: '#fbbf24', share: bw.p3 },
+    { level: 'P4', color: '#34d399', share: bw.p4 },
+    { level: 'P5', color: '#4b5563', share: bw.p5 },
+  ];
 
   return (
     <div className="load-meter">
@@ -61,7 +69,7 @@ export default function NetworkLoadMeter() {
       {/* Priority bandwidth breakdown bars */}
       <div className="load-meter-breakdown">
         <div className="load-meter-breakdown-title">BW SHARE</div>
-        {MOCK_BANDWIDTH.map((band) => (
+        {bandwidthBars.map((band) => (
           <div key={band.level} className="priority-bar-row">
             <div className="priority-bar-dot" style={{ background: band.color }} />
             <div className="priority-bar-track">

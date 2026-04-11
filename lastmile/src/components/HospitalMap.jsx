@@ -1,11 +1,12 @@
-import { useRef, useEffect } from 'react';
+import { useRef } from 'react';
 import { DEPARTMENTS } from '../simulation/networkState';
 
 /**
  * HospitalMap — SVG hospital floor plan with department rooms,
  * network nodes, and connection edges to the server room.
+ * Layer 2: Nodes respond to live active/inactive state.
  */
-export default function HospitalMap() {
+export default function HospitalMap({ nodes, mode }) {
   const svgRef = useRef(null);
   const server = DEPARTMENTS.find(d => d.isServer);
   const departments = DEPARTMENTS.filter(d => !d.isServer);
@@ -61,16 +62,19 @@ export default function HospitalMap() {
         {/* Network edges — lines from each department to server */}
         {departments.map(dept => {
           const deptCenter = getCenter(dept);
+          const nodeState = nodes[dept.label];
+          const isActive = nodeState ? nodeState.active : true;
           return (
             <line
               key={`edge-${dept.id}`}
-              className="network-edge active"
+              className={`network-edge ${isActive ? 'active' : ''}`}
               x1={deptCenter.x}
               y1={deptCenter.y}
               x2={serverCenter.x}
               y2={serverCenter.y}
-              stroke={dept.color}
+              stroke={isActive ? dept.color : 'var(--text-dim)'}
               strokeDasharray="4 4"
+              style={{ opacity: isActive ? undefined : 0.15 }}
             />
           );
         })}
@@ -79,6 +83,8 @@ export default function HospitalMap() {
         {DEPARTMENTS.map(dept => {
           const center = getCenter(dept);
           const isServer = dept.isServer;
+          const nodeState = nodes[dept.label];
+          const isActive = isServer ? true : (nodeState ? nodeState.active : true);
           return (
             <g key={dept.id}>
               {/* Room rectangle */}
@@ -88,22 +94,24 @@ export default function HospitalMap() {
                 y={dept.y}
                 width={dept.w}
                 height={dept.h}
-                stroke={dept.color}
-                strokeOpacity={isServer ? 0.6 : 0.4}
+                stroke={isActive ? dept.color : 'var(--text-dim)'}
+                strokeOpacity={isServer ? 0.6 : isActive ? 0.4 : 0.15}
+                style={!isActive ? { fill: 'rgba(17, 24, 39, 0.3)', opacity: 0.5 } : {}}
               />
 
               {/* Corner accents */}
-              <line x1={dept.x} y1={dept.y} x2={dept.x + 12} y2={dept.y} stroke={dept.color} strokeWidth="2" />
-              <line x1={dept.x} y1={dept.y} x2={dept.x} y2={dept.y + 12} stroke={dept.color} strokeWidth="2" />
-              <line x1={dept.x + dept.w} y1={dept.y} x2={dept.x + dept.w - 12} y2={dept.y} stroke={dept.color} strokeWidth="2" />
-              <line x1={dept.x + dept.w} y1={dept.y} x2={dept.x + dept.w} y2={dept.y + 12} stroke={dept.color} strokeWidth="2" />
-              <line x1={dept.x} y1={dept.y + dept.h} x2={dept.x + 12} y2={dept.y + dept.h} stroke={dept.color} strokeWidth="2" />
-              <line x1={dept.x} y1={dept.y + dept.h} x2={dept.x} y2={dept.y + dept.h - 12} stroke={dept.color} strokeWidth="2" />
-              <line x1={dept.x + dept.w} y1={dept.y + dept.h} x2={dept.x + dept.w - 12} y2={dept.y + dept.h} stroke={dept.color} strokeWidth="2" />
-              <line x1={dept.x + dept.w} y1={dept.y + dept.h} x2={dept.x + dept.w} y2={dept.y + dept.h - 12} stroke={dept.color} strokeWidth="2" />
+              <line x1={dept.x} y1={dept.y} x2={dept.x + 12} y2={dept.y} stroke={isActive ? dept.color : 'var(--text-dim)'} strokeWidth="2" />
+              <line x1={dept.x} y1={dept.y} x2={dept.x} y2={dept.y + 12} stroke={isActive ? dept.color : 'var(--text-dim)'} strokeWidth="2" />
+              <line x1={dept.x + dept.w} y1={dept.y} x2={dept.x + dept.w - 12} y2={dept.y} stroke={isActive ? dept.color : 'var(--text-dim)'} strokeWidth="2" />
+              <line x1={dept.x + dept.w} y1={dept.y} x2={dept.x + dept.w} y2={dept.y + 12} stroke={isActive ? dept.color : 'var(--text-dim)'} strokeWidth="2" />
+              <line x1={dept.x} y1={dept.y + dept.h} x2={dept.x + 12} y2={dept.y + dept.h} stroke={isActive ? dept.color : 'var(--text-dim)'} strokeWidth="2" />
+              <line x1={dept.x} y1={dept.y + dept.h} x2={dept.x} y2={dept.y + dept.h - 12} stroke={isActive ? dept.color : 'var(--text-dim)'} strokeWidth="2" />
+              <line x1={dept.x + dept.w} y1={dept.y + dept.h} x2={dept.x + dept.w - 12} y2={dept.y + dept.h} stroke={isActive ? dept.color : 'var(--text-dim)'} strokeWidth="2" />
+              <line x1={dept.x + dept.w} y1={dept.y + dept.h} x2={dept.x + dept.w} y2={dept.y + dept.h - 12} stroke={isActive ? dept.color : 'var(--text-dim)'} strokeWidth="2" />
 
               {/* Department label */}
-              <text className="dept-label" x={center.x} y={center.y - (isServer ? 14 : 8)}>
+              <text className="dept-label" x={center.x} y={center.y - (isServer ? 14 : 8)}
+                style={!isActive ? { fill: 'var(--text-dim)', opacity: 0.5 } : {}}>
                 {dept.label}
               </text>
               {isServer && (
@@ -112,19 +120,20 @@ export default function HospitalMap() {
                 </text>
               )}
               {!isServer && (
-                <text className="dept-sublabel" x={center.x} y={center.y + 8}>
-                  P{dept.priority} TRAFFIC
+                <text className="dept-sublabel" x={center.x} y={center.y + 8}
+                  style={!isActive ? { fill: 'var(--text-dim)', opacity: 0.4 } : {}}>
+                  {isActive ? `P${dept.priority} TRAFFIC` : 'OFFLINE'}
                 </text>
               )}
 
               {/* Network node */}
               <circle
-                className={`network-node ${isServer ? 'server' : 'active'}`}
+                className={`network-node ${isServer ? 'server' : isActive ? 'active' : 'dead'}`}
                 cx={center.x}
                 cy={center.y + (isServer ? 22 : 20)}
                 r={isServer ? 14 : 8}
-                fill={dept.color}
-                opacity={0.8}
+                fill={isActive ? dept.color : 'var(--text-dim)'}
+                opacity={isActive ? 0.8 : 0.3}
                 filter={isServer ? 'url(#glow-blue)' : undefined}
               />
               {/* Inner dot for non-server nodes */}
@@ -133,8 +142,8 @@ export default function HospitalMap() {
                   cx={center.x}
                   cy={center.y + 20}
                   r={3}
-                  fill={dept.color}
-                  opacity={1}
+                  fill={isActive ? dept.color : 'var(--text-dim)'}
+                  opacity={isActive ? 1 : 0.3}
                 />
               )}
             </g>

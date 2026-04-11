@@ -718,3 +718,31 @@ body {
     rgba(0, 0, 0, 0.03) 4px
   );
 }
+
+/* ── Mode-specific Status Dots ─────────────────────────────── */
+.status-dot.stressed {
+  background: var(--p3-moderate);
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+}
+
+.status-dot.critical-dot {
+  background: var(--p1-critical);
+  box-shadow: 0 0 12px var(--p1-glow);
+  animation: pulse-glow 0.5s ease-in-out infinite;
+}
+
+/* ── Priority Select Dropdown ──────────────────────────────── */
+.priority-select option {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.priority-select:focus {
+  box-shadow: 0 0 0 1px var(--accent-blue);
+}
+
+/* ── Critical Mode Background Flash ────────────────────────── */
+@keyframes critical-bg-pulse {
+  0%, 100% { background-color: var(--bg-primary); }
+  50% { background-color: rgba(255, 45, 45, 0.03); }
+}

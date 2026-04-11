@@ -1,9 +1,21 @@
-import { MOCK_EVENTS } from '../simulation/networkState';
+import { useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { PRIORITY_COLORS } from '../simulation/networkState';
 
 /**
  * EventLog — Bottom bar with scrolling real-time network event entries.
+ * Layer 2: Wired to live event log from simulation.
  */
-export default function EventLog() {
+export default function EventLog({ eventLog }) {
+  const scrollRef = useRef(null);
+
+  // Auto-scroll to top when new entry appears
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = 0;
+    }
+  }, [eventLog.length]);
+
   return (
     <div className="event-log">
       {/* Header */}
@@ -14,7 +26,7 @@ export default function EventLog() {
           fontSize: '10px',
           color: 'var(--text-dim)',
         }}>
-          {MOCK_EVENTS.length} events
+          {eventLog.length} events
         </span>
       </div>
 
@@ -39,37 +51,49 @@ export default function EventLog() {
       </div>
 
       {/* Entries */}
-      <div className="event-log-entries">
-        {MOCK_EVENTS.map((event) => (
-          <div
-            key={event.id}
-            className={`event-entry ${event.priority === 1 ? 'critical-flash' : ''}`}
-          >
-            <span className="event-time">[{event.time}]</span>
-            <span className="event-priority" style={{ color: event.color }}>
-              <span
-                className="event-priority-dot"
-                style={{ background: event.color }}
-              />
-              {event.priorityLabel}
-            </span>
-            <span
-              className="event-desc"
-              style={event.status === 'dropped' ? { color: 'var(--text-dim)' } : {}}
-            >
-              {event.description}
-            </span>
-            <span
-              className="event-latency"
-              style={event.status === 'dropped' ? { textDecoration: 'line-through', color: 'var(--text-dim)' } : {}}
-            >
-              {event.latency}
-            </span>
-            <span className={`event-status ${event.status}`}>
-              {event.status === 'delivered' ? '✓ DELIVERED' : '✗ DROPPED'}
-            </span>
-          </div>
-        ))}
+      <div className="event-log-entries" ref={scrollRef}>
+        <AnimatePresence initial={false}>
+          {eventLog.map((event) => {
+            const color = PRIORITY_COLORS[event.priority] || '#4b5563';
+            const isDropped = event.status === 'dropped';
+            const isCritical = event.priority === 'P1';
+
+            return (
+              <motion.div
+                key={event.id}
+                className={`event-entry ${isCritical ? 'critical-flash' : ''}`}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <span className="event-time">[{event.timestamp}]</span>
+                <span className="event-priority" style={{ color }}>
+                  <span
+                    className="event-priority-dot"
+                    style={{ background: color }}
+                  />
+                  {event.priority}
+                </span>
+                <span
+                  className="event-desc"
+                  style={isDropped ? { color: 'var(--text-dim)' } : {}}
+                >
+                  {event.label}
+                </span>
+                <span
+                  className="event-latency"
+                  style={isDropped ? { textDecoration: 'line-through', color: 'var(--text-dim)' } : {}}
+                >
+                  {event.deliveredIn != null ? `${event.deliveredIn}ms` : '—'}
+                </span>
+                <span className={`event-status ${event.status}`}>
+                  {event.status === 'delivered' ? '✓ DELIVERED' : '✗ DROPPED'}
+                </span>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
       </div>
     </div>
   );

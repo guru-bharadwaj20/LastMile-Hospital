@@ -3,17 +3,13 @@ from ryu.controller import ofp_event
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
 from ryu.controller.handler import set_ev_cls
 from ryu.ofproto import ofproto_v1_3
-from ryu.lib.packet import packet, ethernet, arp, ipv4
+from ryu.lib.packet import packet, ethernet, arp
 
 class StaticRouter(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
 
     def __init__(self, *args, **kwargs):
         super(StaticRouter, self).__init__(*args, **kwargs)
-
-        # mac table: ip -> mac (populated dynamically from ARP)
-        self.ip_to_mac = {}
-        self.ip_to_port = {}  # dpid -> {ip: port}
 
         self.static_flows = {
             1: [

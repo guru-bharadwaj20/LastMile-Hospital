@@ -106,7 +106,7 @@ const ALERT_MAP = {
 function createInitialState() {
   const nodes = {};
   DEPARTMENTS.filter(d => !d.isServer).forEach(d => {
-    nodes[d.label] = { active: true, load: 30 + Math.random() * 20 };
+    nodes[d.label] = { active: true };
   });
 
   return {
@@ -126,19 +126,15 @@ function createInitialState() {
 // ═══════════════════════════════════════════════════════════════
 export function useNetworkSimulation() {
   const [state, setState] = useState(createInitialState);
-  const modeRef = useRef('normal');
-  const startTimeRef = useRef(Date.now());
+  const startTimeRef = useRef(null);
   const criticalTimeoutRef = useRef(null);
   const baselineLogIntervalRef = useRef(null);
-  const stressDropIntervalRef = useRef(null);
-
-  // Keep modeRef synced
-  useEffect(() => {
-    modeRef.current = state.mode;
-  }, [state.mode]);
 
   // ── Network Load Oscillation (every 500ms) ──────────────────
   useEffect(() => {
+    // Seeded here rather than in useRef(Date.now()) so that render stays pure.
+    startTimeRef.current = Date.now();
+
     const interval = setInterval(() => {
       setState(prev => {
         const elapsed = (Date.now() - startTimeRef.current) / 1000;
@@ -247,7 +243,6 @@ export function useNetworkSimulation() {
       });
     }, 1000);
 
-    stressDropIntervalRef.current = interval;
     return () => clearInterval(interval);
   }, []);
 
@@ -418,9 +413,6 @@ export function useNetworkSimulation() {
         return s;
       });
 
-      // Count active streams from this department
-      const deptStreams = prev.activeStreams.filter(s => s.from === name);
-
       const logEntry = {
         id: uid('evt'),
         timestamp: formatTime(),
@@ -488,7 +480,6 @@ export function useNetworkSimulation() {
     return () => {
       if (criticalTimeoutRef.current) clearTimeout(criticalTimeoutRef.current);
       if (baselineLogIntervalRef.current) clearTimeout(baselineLogIntervalRef.current);
-      if (stressDropIntervalRef.current) clearInterval(stressDropIntervalRef.current);
     };
   }, []);
 

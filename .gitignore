@@ -1,4 +1,4 @@
-# Python cache files
+# ── Python ──────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
@@ -15,22 +15,22 @@ env/
 .coverage
 coverage.xml
 
-# Node.js / React (lastmile project)
-lastmile/node_modules/
-lastmile/dist/
-lastmile/dist-ssr/
-lastmile/*.local
-lastmile/.vite/
-lastmile/coverage/
-lastmile/.cache/
+# ── Node / React ────────────────────────────────────────────
+node_modules/
+dist/
+dist-ssr/
+*.local
+.vite/
+coverage/
+.cache/
 .eslintcache
 
-# Environment files
+# ── Environment ─────────────────────────────────────────────
 .env
 .env.*
 !.env.example
 
-# Logs
+# ── Logs ────────────────────────────────────────────────────
 logs
 *.log
 npm-debug.log*
@@ -39,7 +39,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Editor directories and files
+# ── Editors / OS ────────────────────────────────────────────
 .vscode/*
 !.vscode/extensions.json
 .idea/

@@ -134,8 +134,8 @@ export default function App() {
                 )}
               </AnimatePresence>
               <div style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0 }}>
-                <HospitalMap nodes={state.nodes} mode={state.mode} />
-                <TrafficStream activeStreams={state.activeStreams} mode={state.mode} />
+                <HospitalMap nodes={state.nodes} />
+                <TrafficStream activeStreams={state.activeStreams} />
               </div>
               <PriorityLegend />
             </div>

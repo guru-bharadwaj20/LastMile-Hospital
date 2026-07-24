@@ -1,7 +1,18 @@
 {
-  "name": "lastmile",
+  "name": "lastmile-dashboard",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "React dashboard for the LastMile Hospital Network Triage System — visualizes SDN priority queuing for critical medical traffic.",
+  "author": "Guru R Bharadwaj",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/guru-bharadwaj20/LastMile-Hospital.git",
+    "directory": "lastmile"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -1,16 +1,59 @@
-# React + Vite
+# LastMile Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React visualization for the LastMile Hospital Network Triage System. For project context, the SDN layer, and measured results, see the [root README](../README.md).
 
-Currently, two official plugins are available:
+## Quick start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+npm run dev
+```
 
-## React Compiler
+## Scripts
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Script | Purpose |
+|---|---|
+| `npm run dev` | Vite dev server with HMR |
+| `npm run build` | Production build into `dist/` |
+| `npm run preview` | Serve the production build locally |
+| `npm run lint` | ESLint over `src/` |
 
-## Expanding the ESLint configuration
+## Layout
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```
+src/
+├── App.jsx                     Top level layout, header, sidebar accordions
+├── App.css                     Design tokens and all component styling
+├── main.jsx                    React root
+├── simulation/
+│   └── networkState.js         Simulation engine and the useNetworkSimulation hook
+└── components/
+    ├── HospitalMap.jsx         SVG floor plan, department rooms, network edges
+    ├── TrafficStream.jsx       D3 particle animation layered over the map
+    ├── NetworkLoadMeter.jsx    Vertical load gauge and bandwidth share bars
+    ├── AlertPanel.jsx          Emergency console, active alerts, priority config
+    ├── NodeFailurePanel.jsx    Per department kill/restore controls
+    ├── EventLog.jsx            Scrolling network event feed
+    ├── PriorityLegend.jsx      P1–P5 colour key
+    └── ComparisonView.jsx      With/without triage overlay
+```
+
+## How the simulation works
+
+All state lives in a single object owned by `useNetworkSimulation()`. There is no backend and no network I/O.
+
+Three timers drive it:
+
+| Timer | Interval | Effect |
+|---|---|---|
+| Load oscillator | 500 ms | Moves `networkLoad` toward a mode dependent target and recomputes bandwidth share |
+| Baseline log generator | 3–6 s | Emits a delivery event for a randomly chosen active stream |
+| Congestion drop checker | 1 s | In stressed or critical mode, probabilistically drops P5 packets |
+
+`mode` is one of `normal`, `stressed`, `critical`, or `failure`, and determines the load target, the bandwidth split, and which streams are suspended.
+
+The latency numbers shown in the UI come from `calculateDeliveryTime()`. **These are illustrative model constants, not measurements** — see the Simulation Parameters section of the root README.
+
+## Styling
+
+No CSS framework. `App.css` defines CSS custom properties for the colour system (`--p1-critical` through `--p5-background`) and all component classes. Both fonts are loaded from Google Fonts in `index.html`.

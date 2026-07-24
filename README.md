@@ -1,5 +1,11 @@
 # LastMile Hospital Network Triage System
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](LICENSE)
+[![React](https://img.shields.io/badge/React-19.2-38bdf8.svg)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-8.0-a855f7.svg)](https://vitejs.dev/)
+[![Python](https://img.shields.io/badge/Python-3.11-3776ab.svg)](https://www.python.org/)
+[![OpenFlow](https://img.shields.io/badge/OpenFlow-1.3-ff6b2d.svg)](https://opennetworking.org/sdn-resources/openflow/)
+
 > *"Hospitals triage patients by urgency. LastMile triages packets the same way."*
 
 ---

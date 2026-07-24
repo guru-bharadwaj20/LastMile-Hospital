@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useId } from 'react';
+import { useState, useCallback, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Zap } from 'lucide-react';
 import HospitalMap from './components/HospitalMap';
@@ -17,7 +17,6 @@ import { useNetworkSimulation } from './simulation/networkState';
 export default function App() {
   const { state, actions } = useNetworkSimulation();
   const [showComparison, setShowComparison] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [openPanels, setOpenPanels] = useState({
     emergency: true,
     infrastructure: false,
@@ -25,13 +24,6 @@ export default function App() {
     priority: false,
     alerts: false,
   });
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 1024);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
 
   const offlineNodes = Object.entries(state.nodes)
     .filter(([, node]) => !node.active)
@@ -53,19 +45,6 @@ export default function App() {
   const togglePanel = useCallback((panelKey) => {
     setOpenPanels((prev) => ({ ...prev, [panelKey]: !prev[panelKey] }));
   }, []);
-
-  if (isMobile) {
-    return (
-      <div className="mobile-message">
-        <div className="mobile-message-icon">🏥</div>
-        <h1 className="mobile-message-title">LASTMILE</h1>
-        <p className="mobile-message-text">
-          LastMile is optimized for desktop presentation.<br />
-          Please open on a laptop.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <>

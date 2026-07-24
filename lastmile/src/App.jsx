@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Zap } from 'lucide-react';
 import HospitalMap from './components/HospitalMap';
@@ -13,7 +13,6 @@ import { useNetworkSimulation } from './simulation/networkState';
 
 /**
  * App — Main application layout for LastMile Hospital Network Triage System.
- * Layer 3: Full simulation with failure, comparison, demo mode, and polish.
  */
 export default function App() {
   const { state, actions } = useNetworkSimulation();
@@ -27,7 +26,6 @@ export default function App() {
     alerts: false,
   });
 
-  // Mobile detection
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 1024);
     check();
@@ -35,30 +33,27 @@ export default function App() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Check for critical node offline (ICU or ER)
-  const criticalOfflineNodes = Object.entries(state.nodes)
-    .filter(([name, node]) => !node.active && (name === 'ICU' || name === 'ER'))
+  const offlineNodes = Object.entries(state.nodes)
+    .filter(([, node]) => !node.active)
     .map(([name]) => name);
 
-  // Mode-based status
-  const isNetworkActive = state.mode !== 'failure';
+  const criticalOfflineNodes = offlineNodes.filter(n => n === 'ICU' || n === 'ER');
+
+  // The header reflects severity honestly: one department offline is a
+  // degraded network, not a downed one.
   const modeLabel = {
     normal: 'NETWORK ACTIVE',
     stressed: 'NETWORK STRESSED',
     critical: '⚠ CRITICAL ALERT',
-    failure: '✗ NODE FAILURE',
-  }[state.mode] || 'NETWORK ACTIVE';
+    failure: `⚠ DEGRADED — ${offlineNodes.length} OFFLINE`,
+  }[state.mode] ?? 'NETWORK ACTIVE';
 
   const openComparison = useCallback(() => setShowComparison(true), []);
   const closeComparison = useCallback(() => setShowComparison(false), []);
   const togglePanel = useCallback((panelKey) => {
-    setOpenPanels((prev) => ({
-      ...prev,
-      [panelKey]: !prev[panelKey],
-    }));
+    setOpenPanels((prev) => ({ ...prev, [panelKey]: !prev[panelKey] }));
   }, []);
 
-  // Mobile message
   if (isMobile) {
     return (
       <div className="mobile-message">
@@ -74,14 +69,11 @@ export default function App() {
 
   return (
     <>
-      {/* Subtle CRT scanline overlay for atmosphere */}
-      <div className="scanline-overlay" />
-      {/* CRT vignette overlay */}
-      <div className="vignette-overlay" />
+      <div className="scanline-overlay" aria-hidden="true" />
+      <div className="vignette-overlay" aria-hidden="true" />
 
       <div className="app-layout">
-        {/* ── Header ───────────────────────────────────────── */}
-        <header className="app-header" id="app-header">
+        <header className="app-header">
           <div className="header-brand">
             <motion.h1
               className="header-logo"
@@ -94,8 +86,8 @@ export default function App() {
           </div>
 
           <div className="header-center">
-            <div className="status-item" id="status-network">
-              <span className={`status-dot ${!isNetworkActive ? 'inactive' : ''} ${state.mode === 'stressed' ? 'stressed' : ''} ${state.mode === 'critical' ? 'critical-dot' : ''}`} />
+            <div className="status-item" role="status">
+              <span className={`status-dot mode-${state.mode}`} />
               <span>{modeLabel}</span>
             </div>
           </div>
@@ -106,20 +98,17 @@ export default function App() {
               onClick={openComparison}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              id="show-comparison"
             >
-              <Zap size={12} />
+              <Zap size={12} aria-hidden="true" />
               <span>SHOW COMPARISON</span>
             </motion.button>
           </div>
         </header>
 
-        {/* ── Main Area (65/35 Split) ──────────────────────── */}
-        <main className="app-main" id="main-viewport">
+        <main className="app-main">
           <section className="left-pane">
             <NetworkLoadMeter state={state} />
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-              {/* Critical node warning banner */}
+            <div className="map-column">
               <AnimatePresence>
                 {criticalOfflineNodes.length > 0 && (
                   <motion.div
@@ -133,15 +122,17 @@ export default function App() {
                   </motion.div>
                 )}
               </AnimatePresence>
-              <div style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0 }}>
+
+              <div className="map-stage">
                 <HospitalMap nodes={state.nodes} />
                 <TrafficStream activeStreams={state.activeStreams} />
               </div>
+
               <PriorityLegend />
             </div>
           </section>
 
-          <aside className="app-sidebar" id="alert-panel">
+          <aside className="app-sidebar">
             <AccordionSection
               title="Emergency Control"
               isOpen={openPanels.emergency}
@@ -155,7 +146,7 @@ export default function App() {
               isOpen={openPanels.infrastructure}
               onToggle={() => togglePanel('infrastructure')}
             >
-              <NodeFailurePanel nodes={state.nodes} actions={actions} compact />
+              <NodeFailurePanel nodes={state.nodes} actions={actions} />
             </AccordionSection>
 
             <AccordionSection
@@ -187,42 +178,52 @@ export default function App() {
         </main>
       </div>
 
-      {/* ── Comparison Overlay ──────────────────────────────── */}
-      <ComparisonView
-        isOpen={showComparison}
-        onClose={closeComparison}
-        state={state}
-      />
+      {/* AnimatePresence must live here, outside the component it animates.
+          Previously it sat inside ComparisonView, which returned null when
+          closed, so it unmounted before it could ever play an exit. */}
+      <AnimatePresence>
+        {showComparison && (
+          <ComparisonView key="comparison" onClose={closeComparison} state={state} />
+        )}
+      </AnimatePresence>
     </>
   );
 }
 
 function AccordionSection({ title, isOpen, onToggle, children }) {
+  const panelId = useId();
+
   return (
     <section className="sidebar-accordion-section">
-      <button className="sidebar-accordion-header" onClick={onToggle}>
-        <span>{title}</span>
-        <ChevronDown
-          size={14}
-          className={`sidebar-accordion-chevron ${isOpen ? 'open' : ''}`}
-        />
-      </button>
+      <h2 className="sidebar-accordion-heading">
+        <button
+          className="sidebar-accordion-header"
+          onClick={onToggle}
+          aria-expanded={isOpen}
+          aria-controls={panelId}
+        >
+          <span>{title}</span>
+          <ChevronDown
+            size={14}
+            className={`sidebar-accordion-chevron ${isOpen ? 'open' : ''}`}
+            aria-hidden="true"
+          />
+        </button>
+      </h2>
       <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
+            id={panelId}
             className="sidebar-accordion-body"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <div className="sidebar-accordion-inner">
-              {children}
-            </div>
+            <div className="sidebar-accordion-inner">{children}</div>
           </motion.div>
         )}
       </AnimatePresence>
     </section>
   );
 }
-

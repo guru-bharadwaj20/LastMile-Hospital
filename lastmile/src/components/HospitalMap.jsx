@@ -1,30 +1,32 @@
-import { DEPARTMENTS } from '../simulation/networkState';
+import {
+  DEPARTMENTS,
+  DEPARTMENT_NODES,
+  SERVER,
+  MAP_VIEWBOX,
+  departmentColor,
+  getRoomCenter,
+  getNodeCenter,
+} from '../simulation/networkState';
 
 /**
  * HospitalMap — SVG hospital floor plan with department rooms,
  * network nodes, and connection edges to the server room.
- * Nodes respond to live active/inactive state.
+ *
+ * Shares MAP_VIEWBOX and the geometry helpers with TrafficStream so the
+ * particle layer stays registered to the nodes at every viewport size.
  */
 export default function HospitalMap({ nodes }) {
-  const server = DEPARTMENTS.find(d => d.isServer);
-  const departments = DEPARTMENTS.filter(d => !d.isServer);
-
-  // Compute node centers
-  const getCenter = (dept) => ({
-    x: dept.x + dept.w / 2,
-    y: dept.y + dept.h / 2,
-  });
-
-  const serverCenter = getCenter(server);
+  const serverNode = getNodeCenter(SERVER);
 
   return (
     <div className="hospital-map-container">
       <svg
         className="hospital-map-svg"
-        viewBox="0 0 800 450"
+        viewBox={MAP_VIEWBOX}
         preserveAspectRatio="xMidYMid meet"
+        role="img"
+        aria-label="Hospital floor plan showing department network nodes and their links to the central server"
       >
-        {/* Background grid pattern */}
         <defs>
           <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
             <path
@@ -34,7 +36,6 @@ export default function HospitalMap({ nodes }) {
               strokeWidth="0.5"
             />
           </pattern>
-          {/* Glow filters */}
           <filter id="glow-blue" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="4" result="blur" />
             <feMerge>
@@ -42,34 +43,24 @@ export default function HospitalMap({ nodes }) {
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
-          <filter id="glow-red" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feFlood floodColor="#ff2d2d" floodOpacity="0.4" result="color" />
-            <feComposite in="color" in2="blur" operator="in" result="shadow" />
-            <feMerge>
-              <feMergeNode in="shadow" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
         </defs>
 
-        {/* Grid background */}
         <rect width="800" height="450" fill="url(#grid)" />
 
-        {/* Network edges — lines from each department to server */}
-        {departments.map(dept => {
-          const deptCenter = getCenter(dept);
-          const nodeState = nodes[dept.label];
-          const isActive = nodeState ? nodeState.active : true;
+        {/* Network edges — node circle to node circle, so the traffic
+            particles in the overlay travel exactly along these lines. */}
+        {DEPARTMENT_NODES.map(dept => {
+          const from = getNodeCenter(dept);
+          const isActive = nodes[dept.label] ? nodes[dept.label].active : true;
           return (
             <line
               key={`edge-${dept.id}`}
               className={`network-edge ${isActive ? 'active' : ''}`}
-              x1={deptCenter.x}
-              y1={deptCenter.y}
-              x2={serverCenter.x}
-              y2={serverCenter.y}
-              stroke={isActive ? dept.color : 'var(--text-dim)'}
+              x1={from.x}
+              y1={from.y}
+              x2={serverNode.x}
+              y2={serverNode.y}
+              stroke={isActive ? departmentColor(dept) : 'var(--text-dim)'}
               strokeDasharray="4 4"
               style={{ opacity: isActive ? undefined : 0.15 }}
             />
@@ -78,68 +69,87 @@ export default function HospitalMap({ nodes }) {
 
         {/* Department rooms */}
         {DEPARTMENTS.map(dept => {
-          const center = getCenter(dept);
-          const isServer = dept.isServer;
-          const nodeState = nodes[dept.label];
-          const isActive = isServer ? true : (nodeState ? nodeState.active : true);
+          const center = getRoomCenter(dept);
+          const node = getNodeCenter(dept);
+          const isServer = Boolean(dept.isServer);
+          const isActive = isServer ? true : (nodes[dept.label] ? nodes[dept.label].active : true);
+          const color = departmentColor(dept);
+          const strokeColor = isActive ? color : 'var(--text-dim)';
+          const corners = [
+            [dept.x, dept.y, 12, 0], [dept.x, dept.y, 0, 12],
+            [dept.x + dept.w, dept.y, -12, 0], [dept.x + dept.w, dept.y, 0, 12],
+            [dept.x, dept.y + dept.h, 12, 0], [dept.x, dept.y + dept.h, 0, -12],
+            [dept.x + dept.w, dept.y + dept.h, -12, 0], [dept.x + dept.w, dept.y + dept.h, 0, -12],
+          ];
+
           return (
             <g key={dept.id}>
-              {/* Room rectangle */}
               <rect
                 className="dept-rect"
                 x={dept.x}
                 y={dept.y}
                 width={dept.w}
                 height={dept.h}
-                stroke={isActive ? dept.color : 'var(--text-dim)'}
+                stroke={strokeColor}
                 strokeOpacity={isServer ? 0.6 : isActive ? 0.4 : 0.15}
-                style={!isActive ? { fill: 'rgba(17, 24, 39, 0.3)', opacity: 0.5 } : {}}
+                style={!isActive ? { fill: 'rgba(17, 24, 39, 0.3)', opacity: 0.5 } : undefined}
               />
 
-              {/* Corner accents */}
-              <line x1={dept.x} y1={dept.y} x2={dept.x + 12} y2={dept.y} stroke={isActive ? dept.color : 'var(--text-dim)'} strokeWidth="2" />
-              <line x1={dept.x} y1={dept.y} x2={dept.x} y2={dept.y + 12} stroke={isActive ? dept.color : 'var(--text-dim)'} strokeWidth="2" />
-              <line x1={dept.x + dept.w} y1={dept.y} x2={dept.x + dept.w - 12} y2={dept.y} stroke={isActive ? dept.color : 'var(--text-dim)'} strokeWidth="2" />
-              <line x1={dept.x + dept.w} y1={dept.y} x2={dept.x + dept.w} y2={dept.y + 12} stroke={isActive ? dept.color : 'var(--text-dim)'} strokeWidth="2" />
-              <line x1={dept.x} y1={dept.y + dept.h} x2={dept.x + 12} y2={dept.y + dept.h} stroke={isActive ? dept.color : 'var(--text-dim)'} strokeWidth="2" />
-              <line x1={dept.x} y1={dept.y + dept.h} x2={dept.x} y2={dept.y + dept.h - 12} stroke={isActive ? dept.color : 'var(--text-dim)'} strokeWidth="2" />
-              <line x1={dept.x + dept.w} y1={dept.y + dept.h} x2={dept.x + dept.w - 12} y2={dept.y + dept.h} stroke={isActive ? dept.color : 'var(--text-dim)'} strokeWidth="2" />
-              <line x1={dept.x + dept.w} y1={dept.y + dept.h} x2={dept.x + dept.w} y2={dept.y + dept.h - 12} stroke={isActive ? dept.color : 'var(--text-dim)'} strokeWidth="2" />
+              {corners.map(([x, y, dx, dy], i) => (
+                <line
+                  key={i}
+                  x1={x} y1={y} x2={x + dx} y2={y + dy}
+                  stroke={strokeColor}
+                  strokeWidth="2"
+                />
+              ))}
 
-              {/* Department label */}
-              <text className="dept-label" x={center.x} y={center.y - (isServer ? 14 : 8)}
-                style={!isActive ? { fill: 'var(--text-dim)', opacity: 0.5 } : {}}>
+              <text
+                className="dept-label"
+                x={center.x}
+                y={center.y - (isServer ? 14 : 8)}
+                style={!isActive ? { fill: 'var(--text-dim)', opacity: 0.5 } : undefined}
+              >
                 {dept.label}
               </text>
-              {isServer && (
+
+              {isServer ? (
                 <text className="dept-sublabel" x={center.x} y={center.y + 6}>
                   NETWORK HUB
                 </text>
-              )}
-              {!isServer && (
-                <text className="dept-sublabel" x={center.x} y={center.y + 8}
-                  style={!isActive ? { fill: 'var(--text-dim)', opacity: 0.4 } : {}}>
-                  {isActive ? `P${dept.priority} TRAFFIC` : 'OFFLINE'}
+              ) : (
+                <text
+                  className="dept-sublabel"
+                  x={center.x}
+                  y={center.y + 8}
+                  style={!isActive ? { fill: 'var(--text-dim)', opacity: 0.4 } : undefined}
+                >
+                  {isActive ? `${dept.baselinePriority} BASELINE` : 'OFFLINE'}
                 </text>
               )}
 
-              {/* Network node */}
+              {/* P1 capability marker for departments that originate alerts */}
+              {!isServer && dept.alertCapable && isActive && (
+                <text className="dept-alert-capable" x={dept.x + dept.w - 8} y={dept.y + 16}>
+                  P1
+                </text>
+              )}
+
               <circle
                 className={`network-node ${isServer ? 'server' : isActive ? 'active' : 'dead'}`}
-                cx={center.x}
-                cy={center.y + (isServer ? 22 : 20)}
+                cx={node.x}
+                cy={node.y}
                 r={isServer ? 14 : 8}
-                fill={isActive ? dept.color : 'var(--text-dim)'}
+                fill={isActive ? color : 'var(--text-dim)'}
                 opacity={isActive ? 0.8 : 0.3}
                 filter={isServer ? 'url(#glow-blue)' : undefined}
               />
-              {/* Inner dot for non-server nodes */}
               {!isServer && (
                 <circle
-                  cx={center.x}
-                  cy={center.y + 20}
+                  cx={node.x}
+                  cy={node.y}
                   r={3}
-                  fill={isActive ? dept.color : 'var(--text-dim)'}
+                  fill={isActive ? color : 'var(--text-dim)'}
                   opacity={isActive ? 1 : 0.3}
                 />
               )}
@@ -147,19 +157,8 @@ export default function HospitalMap({ nodes }) {
           );
         })}
 
-        {/* Status text bottom-right */}
-        <text
-          x="400"
-          y="440"
-          textAnchor="middle"
-          style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: '9px',
-            fill: 'var(--text-dim)',
-            letterSpacing: '1px',
-          }}
-        >
-          FLOOR PLAN - BUILDING A - LEVEL 2
+        <text className="map-footer-label" x="400" y="440">
+          FLOOR PLAN — BUILDING A — LEVEL 2
         </text>
       </svg>
     </div>

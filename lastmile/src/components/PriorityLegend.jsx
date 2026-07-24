@@ -1,33 +1,34 @@
+import { PRIORITY_COLORS, SERVER_COLOR } from '../simulation/networkState';
+
 /**
- * PriorityLegend — Horizontal strip below the map showing priority color codes.
+ * PriorityLegend — Horizontal strip below the map showing priority colour
+ * codes. Colours come from the same table the map and particles use, so the
+ * legend cannot drift out of sync with what is rendered.
  */
 const LEGEND_ITEMS = [
-  { label: 'P1 Critical', color: '#ff2d2d' },
-  { label: 'P2 Urgent', color: '#ff6b2d' },
-  { label: 'P3 Moderate', color: '#fbbf24' },
-  { label: 'P4 Low', color: '#34d399' },
-  { label: 'P5 Background', color: '#4b5563' },
-  { label: 'Server', color: '#38bdf8' },
+  { label: 'P1 Critical',   color: PRIORITY_COLORS.P1 },
+  { label: 'P2 Urgent',     color: PRIORITY_COLORS.P2 },
+  { label: 'P3 Moderate',   color: PRIORITY_COLORS.P3 },
+  { label: 'P4 Low',        color: PRIORITY_COLORS.P4 },
+  { label: 'P5 Background', color: PRIORITY_COLORS.P5 },
+  { label: 'Server',        color: SERVER_COLOR },
 ];
 
 export default function PriorityLegend() {
   return (
     <div className="priority-legend">
       <div className="legend-title">Priority</div>
-      <div className="legend-items-row">
+      <ul className="legend-items-row">
         {LEGEND_ITEMS.map((item) => (
-          <div key={item.label} className="legend-item">
+          <li key={item.label} className="legend-item">
             <span
               className="legend-color"
-              style={{
-                background: item.color,
-                boxShadow: `0 0 4px ${item.color}44`,
-              }}
+              style={{ background: item.color, boxShadow: `0 0 4px ${item.color}44` }}
             />
             <span>{item.label}</span>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }

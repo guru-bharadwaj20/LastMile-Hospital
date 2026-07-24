@@ -173,30 +173,6 @@ export function PriorityConfigurationSection({ state, actions }) {
   );
 }
 
-export default function AlertPanel({ state, actions }) {
-  return (
-    <div>
-      {/* Section 1: Manual Trigger Buttons */}
-      <div style={{ marginBottom: '24px' }}>
-        <h3 className="alert-section-title">Emergency Console</h3>
-        <EmergencyConsoleSection state={state} actions={actions} />
-      </div>
-
-      {/* Section 2: Active Alerts */}
-      <div style={{ marginBottom: '24px' }}>
-        <h3 className="alert-section-title">Active Alerts</h3>
-        <ActiveAlertsSection state={state} />
-      </div>
-
-      {/* Section 3: Priority Config */}
-      <div>
-        <h3 className="alert-section-title">Priority Configuration</h3>
-        <PriorityConfigurationSection state={state} actions={actions} />
-      </div>
-    </div>
-  );
-}
-
 /**
  * AlertItem — Single active alert with live elapsed timer.
  */

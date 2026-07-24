@@ -1,13 +1,11 @@
-import { useRef } from 'react';
 import { DEPARTMENTS } from '../simulation/networkState';
 
 /**
  * HospitalMap — SVG hospital floor plan with department rooms,
  * network nodes, and connection edges to the server room.
- * Layer 2: Nodes respond to live active/inactive state.
+ * Nodes respond to live active/inactive state.
  */
-export default function HospitalMap({ nodes, mode }) {
-  const svgRef = useRef(null);
+export default function HospitalMap({ nodes }) {
   const server = DEPARTMENTS.find(d => d.isServer);
   const departments = DEPARTMENTS.filter(d => !d.isServer);
 
@@ -22,7 +20,6 @@ export default function HospitalMap({ nodes, mode }) {
   return (
     <div className="hospital-map-container">
       <svg
-        ref={svgRef}
         className="hospital-map-svg"
         viewBox="0 0 800 450"
         preserveAspectRatio="xMidYMid meet"

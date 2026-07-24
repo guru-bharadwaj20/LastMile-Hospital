@@ -4,9 +4,9 @@ import { DEPARTMENTS, PRIORITY_COLORS } from '../simulation/networkState';
 
 /**
  * TrafficStream — D3-animated particles flowing along network edges.
- * Layer 2: Consumes activeStreams from simulation hook for real-time animation.
+ * Consumes activeStreams from the simulation hook.
  */
-export default function TrafficStream({ activeStreams, mode }) {
+export default function TrafficStream({ activeStreams }) {
   const svgRef = useRef(null);
   const animationRef = useRef({}); // track running animations by stream id
 

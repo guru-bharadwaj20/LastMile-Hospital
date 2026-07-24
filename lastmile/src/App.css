@@ -43,9 +43,20 @@
 html,
 body,
 #root {
-  height: 100%;
+  min-height: 100%;
   width: 100%;
-  overflow: hidden;
+}
+
+/* Only the desktop layout is pinned to the viewport. Below that the page is
+   allowed to scroll, because the panels stack instead of sitting side by
+   side. */
+@media (min-width: 1024px) {
+  html,
+  body,
+  #root {
+    height: 100%;
+    overflow: hidden;
+  }
 }
 
 body {
@@ -137,12 +148,19 @@ svg {
 /* ── Layout ─────────────────────────────────────────────────── */
 .app-layout {
   display: grid;
-  grid-template-rows: 56px 1fr;
+  grid-template-rows: auto 1fr;
   grid-template-columns: 1fr;
-  height: 100vh;
-  width: 100vw;
+  min-height: 100vh;
+  width: 100%;
   gap: 1px;
   background: var(--border);
+}
+
+@media (min-width: 1024px) {
+  .app-layout {
+    height: 100vh;
+    min-height: 0;
+  }
 }
 
 .app-header {
@@ -151,8 +169,16 @@ svg {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  padding: 0 24px;
+  gap: 8px;
+  min-height: 56px;
+  padding: 8px 16px;
   border-bottom: 1px solid var(--border);
+}
+
+@media (min-width: 1024px) {
+  .app-header {
+    padding: 0 24px;
+  }
 }
 
 .app-main {
@@ -160,16 +186,30 @@ svg {
   grid-row: 2;
   background: var(--bg-primary);
   display: grid;
-  grid-template-columns: minmax(0, 65%) minmax(0, 35%);
-  overflow: hidden;
+  grid-template-columns: 1fr;
   position: relative;
+  min-height: 0;
+}
+
+@media (min-width: 1024px) {
+  .app-main {
+    grid-template-columns: minmax(0, 65%) minmax(0, 35%);
+    overflow: hidden;
+  }
 }
 
 .left-pane {
   display: flex;
+  flex-direction: column;
   min-width: 0;
   min-height: 0;
   background: var(--bg-primary);
+}
+
+@media (min-width: 1024px) {
+  .left-pane {
+    flex-direction: row;
+  }
 }
 
 .map-column {
@@ -181,11 +221,21 @@ svg {
 }
 
 /* Positioning context for the two stacked SVG layers. */
+/* On narrow screens the pane has no fixed height to fill, so the stage holds
+   the map's own ratio instead of collapsing to nothing. */
 .map-stage {
-  flex: 1;
   position: relative;
   overflow: hidden;
-  min-height: 0;
+  width: 100%;
+  aspect-ratio: 800 / 450;
+}
+
+@media (min-width: 1024px) {
+  .map-stage {
+    flex: 1;
+    min-height: 0;
+    aspect-ratio: auto;
+  }
 }
 
 .traffic-stream-svg {
@@ -197,13 +247,18 @@ svg {
 }
 
 .app-sidebar {
-  grid-column: 2;
-  grid-row: 1;
   background: var(--bg-panel);
-  border-left: 1px solid var(--border);
-  overflow-y: auto;
+  border-top: 1px solid var(--border);
   padding: 10px;
   display: block;
+}
+
+@media (min-width: 1024px) {
+  .app-sidebar {
+    border-top: none;
+    border-left: 1px solid var(--border);
+    overflow-y: auto;
+  }
 }
 
 /* ── Animations ─────────────────────────────────────────────── */
@@ -367,15 +422,37 @@ svg {
 }
 
 /* ── Network Load Meter ─────────────────────────────────────── */
+/* Below the desktop breakpoint the meter becomes a horizontal strip above the
+   map: the vertical gauge is dropped and the read-out plus bandwidth bars
+   carry the same information in a fraction of the height. */
 .load-meter {
-  width: 90px;
+  width: 100%;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  padding: 12px 10px;
+  gap: 14px;
+  padding: 10px 14px;
   background: var(--bg-panel);
-  border-right: 1px solid var(--border);
-  gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.load-meter > .load-meter-gauge {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .load-meter {
+    width: 90px;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 10px;
+    border-bottom: none;
+    border-right: 1px solid var(--border);
+  }
+
+  .load-meter > .load-meter-gauge {
+    display: grid;
+  }
 }
 
 .load-meter-title {
@@ -387,6 +464,7 @@ svg {
   text-transform: uppercase;
   text-align: center;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 /* Gauge and scale sit side by side in one grid row, so the tick labels line
@@ -429,7 +507,6 @@ svg {
 .load-meter-readout {
   font-family: 'JetBrains Mono', monospace;
   font-weight: 700;
-  font-size: 14px;
   text-align: center;
   transition: color 0.4s ease;
 }
@@ -446,11 +523,30 @@ svg {
 }
 
 .load-meter-breakdown {
-  width: 100%;
+  flex: 1;
+  max-width: 280px;
   display: flex;
   flex-direction: column;
   gap: 3px;
   padding: 0 2px;
+}
+
+@media (min-width: 1024px) {
+  .load-meter-breakdown {
+    flex: none;
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.load-meter-readout {
+  font-size: 20px;
+}
+
+@media (min-width: 1024px) {
+  .load-meter-readout {
+    font-size: 14px;
+  }
 }
 
 .load-meter-breakdown-title {
@@ -945,6 +1041,35 @@ svg {
   color: var(--text-primary);
 }
 
+/* Narrow screens: brand and action share the first row, status drops below,
+   rather than all three fighting over one line. */
+@media (max-width: 639px) {
+  .app-header {
+    grid-template-columns: 1fr auto;
+  }
+
+  .header-brand {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .header-actions {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .header-center {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: start;
+  }
+
+  .header-logo {
+    font-size: 19px;
+    letter-spacing: 2px;
+  }
+}
+
 .header-actions {
   display: flex;
   align-items: center;
@@ -1085,6 +1210,32 @@ svg {
   grid-template-columns: 58px 68px 1fr 48px 74px;
   gap: 8px;
   font-size: 10px;
+}
+
+/* Five columns do not fit a phone. Reflow each entry to two rows and drop the
+   header, whose labels no longer describe the layout. */
+@media (max-width: 559px) {
+  .event-entry {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'desc    status'
+      'time    latency';
+    gap: 2px 8px;
+  }
+
+  .sidebar-event-log-wrap .event-entry {
+    grid-template-columns: 1fr auto;
+  }
+
+  .event-entry-head {
+    display: none;
+  }
+
+  .event-time { grid-area: time; }
+  .event-desc { grid-area: desc; white-space: normal; }
+  .event-latency { grid-area: latency; }
+  .event-status { grid-area: status; }
+  .event-priority { display: none; }
 }
 
 .header-comparison-btn:hover {
@@ -1255,15 +1406,22 @@ svg {
 }
 
 .comparison-container {
-  width: 90%;
+  width: calc(100% - 24px);
   max-width: 900px;
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 32px;
+  padding: 20px 16px;
   position: relative;
   max-height: 90vh;
   overflow-y: auto;
+}
+
+@media (min-width: 768px) {
+  .comparison-container {
+    width: 90%;
+    padding: 32px;
+  }
 }
 
 .comparison-close {
@@ -1289,18 +1447,36 @@ svg {
 
 .comparison-split {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: 1fr;
   gap: 0;
 }
 
 .comparison-divider {
-  width: 1px;
+  height: 1px;
   background: var(--border);
-  margin: 0 24px;
+  margin: 12px 0;
+}
+
+@media (min-width: 768px) {
+  .comparison-split {
+    grid-template-columns: 1fr auto 1fr;
+  }
+
+  .comparison-divider {
+    width: 1px;
+    height: auto;
+    margin: 0 24px;
+  }
 }
 
 .comparison-side {
-  padding: 16px;
+  padding: 8px;
+}
+
+@media (min-width: 768px) {
+  .comparison-side {
+    padding: 16px;
+  }
 }
 
 .comparison-without {
@@ -1497,38 +1673,3 @@ svg {
   box-shadow: 0 0 12px var(--accent-pulse);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   MOBILE MESSAGE
-   ═══════════════════════════════════════════════════════════════ */
-.mobile-message {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  width: 100vw;
-  background: var(--bg-primary);
-  padding: 32px;
-  text-align: center;
-}
-
-.mobile-message-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-}
-
-.mobile-message-title {
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: 700;
-  font-size: 28px;
-  letter-spacing: 4px;
-  color: var(--text-primary);
-  margin-bottom: 16px;
-}
-
-.mobile-message-text {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  color: var(--text-muted);
-  line-height: 1.6;
-}

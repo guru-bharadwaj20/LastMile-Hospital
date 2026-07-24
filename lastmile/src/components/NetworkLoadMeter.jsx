@@ -1,84 +1,83 @@
+import { PRIORITY_COLORS } from '../simulation/networkState';
+
+const TICKS = [100, 80, 60, 40, 20, 0];
+
+const BANDS = [
+  { level: 'P1', key: 'p1' },
+  { level: 'P2', key: 'p2' },
+  { level: 'P3', key: 'p3' },
+  { level: 'P4', key: 'p4' },
+  { level: 'P5', key: 'p5' },
+];
+
+function loadColor(value) {
+  if (value >= 80) return 'var(--p1-critical)';
+  if (value >= 60) return 'var(--p3-moderate)';
+  return 'var(--p4-low)';
+}
+
 /**
  * NetworkLoadMeter — Vertical gauge showing 0-100% network load
  * with priority bandwidth breakdown bars.
- * Layer 2: Wired to live simulation state.
  */
 export default function NetworkLoadMeter({ state }) {
-  const load = state.networkLoad;
+  // networkLoad is carried as a float so the approach curve converges;
+  // it is rounded only for display.
+  const load = Math.round(state.networkLoad);
+  const clamped = Math.max(0, Math.min(load, 100));
   const bw = state.bandwidthAllocation;
 
-  // Determine color based on load level
-  const getLoadColor = (value) => {
-    if (value >= 80) return 'var(--p1-critical)';
-    if (value >= 60) return 'var(--p3-moderate)';
-    return 'var(--p4-low)';
-  };
-
-  const fillColor = getLoadColor(load);
-  const isHighLoad = load >= 80;
-
-  const bandwidthBars = [
-    { level: 'P1', color: '#ff2d2d', share: bw.p1 },
-    { level: 'P2', color: '#ff6b2d', share: bw.p2 },
-    { level: 'P3', color: '#fbbf24', share: bw.p3 },
-    { level: 'P4', color: '#34d399', share: bw.p4 },
-    { level: 'P5', color: '#4b5563', share: bw.p5 },
-  ];
+  const fillColor = loadColor(clamped);
+  const isHighLoad = clamped >= 80;
 
   return (
     <div className="load-meter">
-      {/* "NETWORK LOAD" label at top */}
       <div className="load-meter-title">NETWORK LOAD</div>
 
-      {/* Vertical bar gauge with percentage inside */}
-      <div
-        className="load-meter-bar-track"
-        style={isHighLoad ? { animation: 'gauge-pulse 2s ease-in-out infinite' } : {}}
-      >
-        {/* Fill bar */}
-        <div
-          className="load-meter-bar-fill"
-          style={{
-            transform: `scaleY(${Math.max(0, Math.min(load, 100)) / 100})`,
-            background: fillColor,
-            boxShadow: `0 0 8px ${fillColor}66`,
-          }}
-        />
-        {/* Percentage number positioned directly above the fill level */}
-        <div
-          className="load-meter-bar-value"
-          style={{
-            bottom: `calc(${Math.max(0, Math.min(load, 100))}% - 2px)`,
-            color: fillColor,
-          }}
-        >
-          {load}%
+      {/* Gauge and its scale share a grid row, so the tick labels line up
+          with the track instead of stacking underneath it. */}
+      <div className="load-meter-gauge">
+        <div className={`load-meter-bar-track ${isHighLoad ? 'high' : ''}`}>
+          <div
+            className="load-meter-bar-fill"
+            style={{
+              transform: `scaleY(${clamped / 100})`,
+              background: fillColor,
+              boxShadow: `0 0 8px ${fillColor}66`,
+            }}
+          />
+        </div>
+
+        <div className="load-meter-ticks" aria-hidden="true">
+          {TICKS.map(t => (
+            <span key={t}>{t}</span>
+          ))}
         </div>
       </div>
 
-      {/* Tick marks alongside gauge */}
-      <div className="load-meter-ticks">
-        <span>100</span>
-        <span>80</span>
-        <span>60</span>
-        <span>40</span>
-        <span>20</span>
-        <span>0</span>
+      {/* Read-out sits below the gauge, where it can never be clipped by the
+          track's overflow at 0% or 100%. */}
+      <div
+        className="load-meter-readout"
+        style={{ color: fillColor }}
+        role="meter"
+        aria-valuenow={clamped}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label="Network load"
+      >
+        {clamped}%
       </div>
 
-      {/* Priority bandwidth breakdown bars */}
       <div className="load-meter-breakdown">
         <div className="load-meter-breakdown-title">BW SHARE</div>
-        {bandwidthBars.map((band) => (
-          <div key={band.level} className="priority-bar-row">
-            <div className="priority-bar-dot" style={{ background: band.color }} />
+        {BANDS.map(({ level, key }) => (
+          <div key={level} className="priority-bar-row">
+            <div className="priority-bar-dot" style={{ background: PRIORITY_COLORS[level] }} />
             <div className="priority-bar-track">
               <div
                 className="priority-bar-fill"
-                style={{
-                  width: `${band.share}%`,
-                  background: band.color,
-                }}
+                style={{ width: `${bw[key]}%`, background: PRIORITY_COLORS[level] }}
               />
             </div>
           </div>

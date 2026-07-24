@@ -1,81 +1,112 @@
 import { useRef, useEffect } from 'react';
 import * as d3 from 'd3';
-import { DEPARTMENTS, PRIORITY_COLORS } from '../simulation/networkState';
+import {
+  DEPARTMENTS,
+  SERVER,
+  MAP_VIEWBOX,
+  PRIORITY_COLORS,
+  PRIORITY_RANK,
+  departmentColor,
+  getNodeCenter,
+} from '../simulation/networkState';
+
+// Module scope: derived once from a static table, so the effect below needs
+// no dependency on it and cannot go stale.
+const DEPT_BY_LABEL = new Map(DEPARTMENTS.map(d => [d.label, d]));
+const SERVER_NODE = getNodeCenter(SERVER);
+
+/**
+ * A stream is restarted only when something that affects its animation
+ * changes. Without this, either every state tick restarts every particle,
+ * or property changes are silently ignored.
+ */
+function signatureOf(stream) {
+  return [
+    stream.from,
+    stream.priority,
+    stream.particleCount,
+    stream.speed,
+    stream.isAlertParticle ? 'alert' : 'loop',
+  ].join('|');
+}
+
+function radiusFor(stream) {
+  if (stream.isAlertParticle) return 6;
+  const rank = PRIORITY_RANK[stream.priority] ?? 5;
+  if (rank === 1) return 4;
+  if (rank === 2) return 3.5;
+  return 2.5;
+}
+
+function opacityFor(stream) {
+  if (stream.isAlertParticle) return 1;
+  return (PRIORITY_RANK[stream.priority] ?? 5) <= 2 ? 0.85 : 0.6;
+}
 
 /**
  * TrafficStream — D3-animated particles flowing along network edges.
- * Consumes activeStreams from the simulation hook.
+ *
+ * Each stream owns a <g> group, which is how it is torn down. That avoids
+ * building CSS class selectors out of generated ids entirely.
  */
 export default function TrafficStream({ activeStreams }) {
   const svgRef = useRef(null);
-  const animationRef = useRef({}); // track running animations by stream id
-
-  const server = DEPARTMENTS.find(d => d.isServer);
-  const deptMap = {};
-  DEPARTMENTS.forEach(d => {
-    deptMap[d.label] = d;
-  });
-
-  const getCenter = (dept) => ({
-    x: dept.x + dept.w / 2,
-    y: dept.y + dept.h / 2 + 20,
-  });
-
-  const serverCenter = getCenter(server);
+  const runningRef = useRef(new Map()); // id -> { token, group, signature }
 
   useEffect(() => {
     if (!svgRef.current) return;
     const svg = d3.select(svgRef.current);
+    const running = runningRef.current;
 
-    // Track which streams are currently animated
-    const currentAnimations = animationRef.current;
-    const activeIds = new Set(activeStreams.filter(s => s.active).map(s => s.id));
+    const wanted = new Map(
+      activeStreams.filter(s => s.active && DEPT_BY_LABEL.has(s.from)).map(s => [s.id, s]),
+    );
 
-    // Remove animations for streams that are no longer active
-    Object.keys(currentAnimations).forEach(id => {
-      if (!activeIds.has(id)) {
-        svg.selectAll(`.particle-${CSS.escape(id)}`).interrupt().remove();
-        delete currentAnimations[id];
-      }
-    });
+    const stop = (id, entry) => {
+      entry.token.cancelled = true;
+      entry.group.selectAll('circle').interrupt();
+      entry.group.remove();
+      running.delete(id);
+    };
 
-    // Add/update animations for active streams
-    activeStreams.forEach(stream => {
-      if (!stream.active) return;
-      const dept = deptMap[stream.from];
-      if (!dept) return;
+    // Tear down streams that stopped, or whose definition changed.
+    for (const [id, entry] of [...running]) {
+      const next = wanted.get(id);
+      if (!next || signatureOf(next) !== entry.signature) stop(id, entry);
+    }
 
-      // Skip if already animating this stream
-      if (currentAnimations[stream.id]) return;
+    // Start streams that are newly active.
+    for (const [id, stream] of wanted) {
+      if (running.has(id)) continue;
 
-      const from = getCenter(dept);
-      const to = serverCenter;
-      const color = PRIORITY_COLORS[stream.priority] || dept.color;
-      const isP1Alert = stream.isAlertParticle;
+      const dept = DEPT_BY_LABEL.get(stream.from);
+      const from = getNodeCenter(dept);
+      const to = SERVER_NODE;
+      const color = PRIORITY_COLORS[stream.priority] || departmentColor(dept);
+      const token = { cancelled: false };
+      const group = svg.append('g');
 
-      currentAnimations[stream.id] = true;
+      running.set(id, { token, group, signature: signatureOf(stream) });
+
+      const radius = radiusFor(stream);
+      const opacity = opacityFor(stream);
 
       for (let i = 0; i < stream.particleCount; i++) {
-        const radius = isP1Alert ? 6 : stream.priority === 'P1' ? 4 : stream.priority === 'P2' ? 3.5 : 2.5;
-        const opacity = isP1Alert ? 1 : stream.priority <= 'P2' ? 0.85 : 0.6;
-
-        const particle = svg.append('circle')
-          .attr('class', `traffic-particle particle-${stream.id}`)
+        const particle = group
+          .append('circle')
+          .attr('class', 'traffic-particle')
           .attr('r', radius)
           .attr('fill', color)
           .attr('opacity', opacity)
           .attr('cx', from.x)
           .attr('cy', from.y);
 
-        // P1 alert particles get extra glow
-        if (isP1Alert) {
-          particle.attr('filter', 'url(#glow-p1)');
-        }
+        if (stream.isAlertParticle) particle.attr('filter', 'url(#glow-p1)');
 
         const delay = i * (stream.speed / stream.particleCount);
 
-        if (isP1Alert) {
-          // Single-shot for alert particles
+        if (stream.isAlertParticle) {
+          // Single shot: fires once, then removes itself.
           particle
             .transition()
             .delay(delay)
@@ -88,55 +119,58 @@ export default function TrafficStream({ activeStreams }) {
               d3.select(this).remove();
             });
         } else {
-          // Looping for normal streams
-          function animate() {
+          const loop = () => {
+            if (token.cancelled) return;
             particle
               .attr('cx', from.x)
               .attr('cy', from.y)
               .attr('opacity', opacity)
               .transition()
-              .delay(delay)
               .duration(stream.speed)
               .ease(d3.easeLinear)
               .attr('cx', to.x)
               .attr('cy', to.y)
               .attr('opacity', 0.1)
-              .on('end', function () {
-                // Check if still active
-                if (!currentAnimations[stream.id]) {
-                  d3.select(this).remove();
-                  return;
-                }
-                animate();
-              });
+              .on('end', loop);
+          };
+          // Stagger the initial launch instead of delaying every lap.
+          if (delay === 0) {
+            loop();
+          } else {
+            particle
+              .transition()
+              .delay(delay)
+              .duration(0)
+              .on('end', loop);
           }
-          animate();
         }
       }
-    });
-
-    // Cleanup on unmount
-    return () => {
-      svg.selectAll('.traffic-particle').interrupt().remove();
-      animationRef.current = {};
-    };
+    }
   }, [activeStreams]);
+
+  // Unmount only. Deliberately separate from the effect above: doing this
+  // teardown on every dependency change would wipe and restart every
+  // particle each time any part of the simulation state ticked.
+  useEffect(() => {
+    const running = runningRef.current;
+    return () => {
+      for (const entry of running.values()) {
+        entry.token.cancelled = true;
+        entry.group.selectAll('circle').interrupt();
+      }
+      running.clear();
+    };
+  }, []);
 
   return (
     <svg
       ref={svgRef}
-      style={{
-        position: 'absolute',
-        inset: 0,
-        width: '100%',
-        height: '100%',
-        pointerEvents: 'none',
-      }}
-      viewBox="0 0 800 420"
+      className="traffic-stream-svg"
+      viewBox={MAP_VIEWBOX}
       preserveAspectRatio="xMidYMid meet"
+      aria-hidden="true"
     >
       <defs>
-        {/* Glow filter for P1 alert particles */}
         <filter id="glow-p1" x="-100%" y="-100%" width="300%" height="300%">
           <feGaussianBlur stdDeviation="4" result="blur" />
           <feFlood floodColor="#ff2d2d" floodOpacity="0.6" result="color" />

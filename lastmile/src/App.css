@@ -86,6 +86,39 @@ svg {
   display: block;
 }
 
+/* Visible to assistive technology only. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.align-right {
+  text-align: right;
+}
+
+/* Respect users who have asked the OS to reduce motion. The dashboard leans
+   heavily on infinite pulses, scanlines and particle animation. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .scanline-overlay {
+    display: none;
+  }
+}
+
 /* ── Scrollbar ──────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 4px;
@@ -137,6 +170,30 @@ svg {
   min-width: 0;
   min-height: 0;
   background: var(--bg-primary);
+}
+
+.map-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Positioning context for the two stacked SVG layers. */
+.map-stage {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.traffic-stream-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 
 .app-sidebar {
@@ -242,6 +299,26 @@ svg {
   transition: fill 0.3s ease, opacity 0.3s ease;
 }
 
+/* Marks departments that can originate a P1 alert. */
+.dept-alert-capable {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 1px;
+  fill: var(--p1-critical);
+  text-anchor: end;
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.map-footer-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  fill: var(--text-dim);
+  letter-spacing: 1px;
+  text-anchor: middle;
+}
+
 .network-node {
   transition: opacity 0.3s ease, fill 0.3s ease;
 }
@@ -312,15 +389,28 @@ svg {
   line-height: 1.2;
 }
 
-.load-meter-bar-track {
-  width: 40px;
+/* Gauge and scale sit side by side in one grid row, so the tick labels line
+   up with the track rather than stacking underneath it. */
+.load-meter-gauge {
   flex: 1;
   min-height: 120px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 5px;
+  justify-content: center;
+}
+
+.load-meter-bar-track {
   background: var(--bg-primary);
   border-radius: 6px;
   position: relative;
   overflow: hidden;
   border: 2px solid var(--border);
+}
+
+.load-meter-bar-track.high {
+  animation: gauge-pulse 2s ease-in-out infinite;
 }
 
 .load-meter-bar-fill {
@@ -334,29 +424,25 @@ svg {
   transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), background 0.4s ease;
 }
 
-.load-meter-bar-value {
-  position: absolute;
-  left: 50%;
-  transform: translate(-50%, 50%);
+/* Read-out lives outside the track. Positioning it inside meant the value was
+   clipped by overflow:hidden at both 0% and 100%. */
+.load-meter-readout {
   font-family: 'JetBrains Mono', monospace;
   font-weight: 700;
-  font-size: 13px;
-  text-shadow: 0 0 8px rgba(0,0,0,0.8);
-  pointer-events: none;
-  z-index: 2;
-  transition: bottom 0.6s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s ease;
+  font-size: 14px;
+  text-align: center;
+  transition: color 0.4s ease;
 }
 
 .load-meter-ticks {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  align-items: flex-start;
   font-family: 'JetBrains Mono', monospace;
   font-size: 7px;
   color: var(--text-dim);
-  text-align: right;
-  width: 100%;
-  padding: 0 4px;
+  line-height: 1;
 }
 
 .load-meter-breakdown {
@@ -407,18 +493,6 @@ svg {
 }
 
 /* ── Alert Panel ────────────────────────────────────────────── */
-.alert-section-title {
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  margin-bottom: 12px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--border);
-}
-
 .trigger-btn {
   width: 100%;
   display: flex;
@@ -490,9 +564,34 @@ svg {
   box-shadow: 0 0 12px var(--accent-pulse);
 }
 
+.trigger-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.trigger-btn:disabled:hover {
+  border-color: var(--border);
+  transform: none;
+  box-shadow: none;
+}
+
 .trigger-btn-icon {
-  font-size: 16px;
-  line-height: 1;
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.trigger-btn.critical .trigger-btn-icon { color: var(--p1-critical); }
+.trigger-btn.urgent   .trigger-btn-icon { color: var(--p2-urgent); }
+.trigger-btn.moderate .trigger-btn-icon { color: var(--p3-moderate); }
+.trigger-btn.stress   .trigger-btn-icon { color: var(--p5-background); }
+.trigger-btn.reset    .trigger-btn-icon { color: var(--accent-blue); }
+
+.panel-empty {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 12px;
+  letter-spacing: 1px;
 }
 
 /* Active Alerts */
@@ -503,9 +602,20 @@ svg {
   padding: 10px 12px;
   background: var(--bg-primary);
   border: 1px solid var(--border);
+  border-left: 3px solid var(--p1-critical);
   border-radius: 4px;
   margin-bottom: 6px;
-  animation: fadeInUp 0.3s ease;
+}
+
+.alert-delivered {
+  font-weight: 700;
+}
+
+.alert-untriaged {
+  margin-top: 3px;
+  font-size: 9px;
+  color: var(--text-dim);
+  font-style: italic;
 }
 
 .alert-badge {
@@ -563,11 +673,38 @@ svg {
   flex-shrink: 0;
 }
 
+.priority-type {
+  color: var(--text-muted);
+}
+
 .priority-level {
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
   color: var(--text-muted);
   text-align: right;
+}
+
+.priority-select {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 2px 4px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+/* P1 is hardcoded to the protected queue in the engine, so its row is not
+   editable. Showing it as locked is more honest than offering a control that
+   silently does nothing. */
+.priority-locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  opacity: 0.75;
+  cursor: help;
 }
 
 /* ── Event Log ──────────────────────────────────────────────── */
@@ -594,10 +731,62 @@ svg {
   color: var(--text-dim);
 }
 
+.event-log-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
 .event-log-entries {
   flex: 1;
   overflow-y: auto;
   padding: 8px 20px;
+}
+
+.event-entry-head {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  margin: 0 20px;
+  font-size: 9px;
+  color: var(--text-dim);
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.event-priority-sys {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+}
+
+.event-desc.status-dropped,
+.event-latency.status-dropped {
+  color: var(--text-dim);
+}
+
+.event-latency.status-dropped {
+  text-decoration: line-through;
+}
+
+/* Reference rows are commentary, not traffic. They must not read as a real
+   dropped packet. */
+.event-entry.kind-note .event-desc,
+.event-entry.kind-note .event-latency {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.event-status.note {
+  color: var(--text-dim);
+  font-style: italic;
+  text-decoration: none;
+}
+
+.event-entry.kind-infra .event-desc {
+  color: var(--text-primary);
+  letter-spacing: 0.5px;
 }
 
 .event-entry {
@@ -721,6 +910,7 @@ svg {
   justify-content: center;
   gap: 16px;
   flex-wrap: wrap;
+  list-style: none;
 }
 
 .legend-item {
@@ -784,17 +974,18 @@ svg {
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
-.status-dot.inactive {
-  background: var(--p1-critical);
-  box-shadow: 0 0 8px var(--p1-glow);
-}
-
-.status-dot.stressed {
+.status-dot.mode-stressed {
   background: var(--p3-moderate);
   box-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
 }
 
-.status-dot.critical-dot {
+/* Degraded, not down: one department offline is amber, not red. */
+.status-dot.mode-failure {
+  background: var(--p2-urgent);
+  box-shadow: 0 0 8px rgba(255, 107, 45, 0.5);
+}
+
+.status-dot.mode-critical {
   background: var(--p1-critical);
   box-shadow: 0 0 12px var(--p1-glow);
   animation: pulse-glow 0.5s ease-in-out infinite;
@@ -828,6 +1019,10 @@ svg {
   margin-bottom: 8px;
 }
 
+.sidebar-accordion-heading {
+  margin: 0;
+}
+
 .sidebar-accordion-header {
   width: 100%;
   background: var(--bg-panel);
@@ -846,6 +1041,10 @@ svg {
   cursor: pointer;
 }
 
+.sidebar-accordion-header:hover {
+  color: var(--text-primary);
+}
+
 .sidebar-accordion-chevron {
   transition: transform 0.2s ease;
 }
@@ -854,18 +1053,14 @@ svg {
   transform: rotate(180deg);
 }
 
+/* Must clip: Framer Motion animates height 0 <-> auto here, and with
+   overflow visible the contents spill over the section below mid-animation. */
 .sidebar-accordion-body {
-  overflow: visible;
+  overflow: hidden;
 }
 
 .sidebar-accordion-inner {
-  height: auto;
-  overflow: visible;
   padding: 10px;
-}
-
-.sidebar-accordion-inner .alert-section-title {
-  display: none;
 }
 
 .sidebar-accordion-inner .node-failure-list {
@@ -904,8 +1099,13 @@ svg {
   color: var(--text-primary);
 }
 
-.priority-select:focus {
-  box-shadow: 0 0 0 1px var(--accent-blue);
+/* ── Focus Visibility ──────────────────────────────────────── */
+/* Every interactive control had `outline: none` or no focus style at all,
+   leaving keyboard users with no indication of position. */
+:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+  border-radius: 3px;
 }
 
 /* ── Scanline Overlay ───────────────────────────────────────── */
@@ -1128,11 +1328,28 @@ svg {
   color: var(--text-muted);
 }
 
+.comparison-side-icon {
+  opacity: 0.4;
+  flex-shrink: 0;
+}
+
+.comparison-side-icon.accent,
+.comparison-side-title.accent,
+.comparison-load.accent {
+  color: var(--accent-blue);
+  opacity: 1;
+}
+
 .comparison-side-subtitle {
   font-size: 10px;
   color: var(--text-dim);
   margin-bottom: 16px;
   letter-spacing: 0.5px;
+}
+
+.comparison-side-subtitle.bright,
+.comparison-dropped .bright {
+  color: var(--text-muted);
 }
 
 .comparison-load {
@@ -1142,6 +1359,45 @@ svg {
   color: var(--text-dim);
   margin-bottom: 16px;
   letter-spacing: 1px;
+}
+
+.comparison-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+}
+
+.comparison-bar-track {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--bg-primary);
+  overflow: hidden;
+  flex: 1;
+}
+
+.comparison-bar-track.dim {
+  background: var(--border);
+}
+
+.comparison-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+}
+
+.comparison-metric-note {
+  font-weight: 400;
+  font-style: italic;
+  color: var(--text-dim);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.comparison-disclaimer {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 9px;
+  font-style: italic;
+  color: var(--text-dim);
+  letter-spacing: 0.3px;
 }
 
 .comparison-metric {
@@ -1155,6 +1411,10 @@ svg {
   color: var(--text-dim);
   letter-spacing: 1px;
   margin-bottom: 4px;
+}
+
+.comparison-metric-label.bright {
+  color: var(--text-primary);
 }
 
 .comparison-metric-bar-row {

@@ -2,67 +2,60 @@ import { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PRIORITY_COLORS } from '../simulation/networkState';
 
+const STATUS_LABEL = {
+  delivered: '✓ DELIVERED',
+  dropped: '✗ DROPPED',
+  note: 'REFERENCE',
+};
+
 /**
- * EventLog — Bottom bar with scrolling real-time network event entries.
- * Layer 3: Includes "See why this matters" button on P1 delivered entries.
+ * EventLog — Scrolling real-time network event feed.
  */
 export default function EventLog({ eventLog, onShowComparison }) {
   const scrollRef = useRef(null);
+  const newestId = eventLog.length > 0 ? eventLog[0].id : null;
 
-  // Auto-scroll to top when new entry appears
+  // Keyed on the newest entry's id, not on length: the log is capped, so once
+  // it reaches the cap the length stops changing and length-based auto-scroll
+  // silently stops working forever.
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = 0;
-    }
-  }, [eventLog.length]);
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [newestId]);
 
   return (
     <div className="event-log">
-      {/* Header */}
       <div className="event-log-header">
         <h3 className="event-log-title">Network Event Log</h3>
-        <span style={{
-          fontFamily: "'JetBrains Mono', monospace",
-          fontSize: '10px',
-          color: 'var(--text-dim)',
-        }}>
-          {eventLog.length} events
-        </span>
+        <span className="event-log-count">{eventLog.length} events</span>
       </div>
 
-      {/* Column headers */}
-      <div className="event-entry" style={{
-        padding: '4px 0',
-        borderBottom: '1px solid var(--border)',
-        margin: '0 20px',
-        fontSize: '9px',
-        color: 'var(--text-dim)',
-        fontFamily: "'Rajdhani', sans-serif",
-        fontWeight: 700,
-        letterSpacing: '1.5px',
-        textTransform: 'uppercase',
-        animation: 'none',
-      }}>
+      <div className="event-entry event-entry-head" aria-hidden="true">
         <span>Time</span>
         <span>Priority</span>
         <span>Description</span>
-        <span style={{ textAlign: 'right' }}>Latency</span>
-        <span style={{ textAlign: 'right' }}>Status</span>
+        <span className="align-right">Latency</span>
+        <span className="align-right">Status</span>
       </div>
 
-      {/* Entries */}
-      <div className="event-log-entries" ref={scrollRef}>
+      <div
+        className="event-log-entries"
+        ref={scrollRef}
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions"
+        aria-label="Network events"
+      >
         <AnimatePresence initial={false}>
           {eventLog.map((event) => {
-            const color = PRIORITY_COLORS[event.priority] || 'var(--p5-background)';
-            const isDropped = event.status === 'dropped';
-            const isCritical = event.priority === 'P1';
-            const showComparisonBtn = isCritical && event.status === 'delivered' && onShowComparison;
+            const color = event.priority ? PRIORITY_COLORS[event.priority] : 'var(--text-dim)';
+            const isCritical = event.priority === 'P1' && event.kind === 'traffic';
+            const showComparisonBtn =
+              isCritical && event.status === 'delivered' && Boolean(onShowComparison);
 
             return (
               <motion.div
                 key={event.id}
-                className={`event-entry ${isCritical ? 'critical-flash' : ''}`}
+                className={`event-entry kind-${event.kind ?? 'traffic'} ${isCritical ? 'critical-flash' : ''}`}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0 }}
@@ -70,34 +63,28 @@ export default function EventLog({ eventLog, onShowComparison }) {
               >
                 <span className="event-time">[{event.timestamp}]</span>
                 <span className="event-priority" style={{ color }}>
-                  <span
-                    className="event-priority-dot"
-                    style={{ background: color }}
-                  />
-                  {event.priority}
+                  {event.priority ? (
+                    <>
+                      <span className="event-priority-dot" style={{ background: color }} />
+                      {event.priority}
+                    </>
+                  ) : (
+                    <span className="event-priority-sys">INFRA</span>
+                  )}
                 </span>
-                <span
-                  className="event-desc"
-                  style={isDropped ? { color: 'var(--text-dim)' } : {}}
-                >
+                <span className={`event-desc status-${event.status}`}>
                   {event.label}
                   {showComparisonBtn && (
-                    <button
-                      className="event-comparison-btn"
-                      onClick={onShowComparison}
-                    >
+                    <button className="event-comparison-btn" onClick={onShowComparison}>
                       See why this matters →
                     </button>
                   )}
                 </span>
-                <span
-                  className="event-latency"
-                  style={isDropped ? { textDecoration: 'line-through', color: 'var(--text-dim)' } : {}}
-                >
+                <span className={`event-latency status-${event.status}`}>
                   {event.deliveredIn != null ? `${event.deliveredIn}ms` : '—'}
                 </span>
                 <span className={`event-status ${event.status}`}>
-                  {event.status === 'delivered' ? '✓ DELIVERED' : '✗ DROPPED'}
+                  {STATUS_LABEL[event.status] ?? event.status}
                 </span>
               </motion.div>
             );

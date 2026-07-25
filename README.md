@@ -265,6 +265,24 @@ npm run preview   # serves dist/ at http://localhost:4173
 
 Use `npm run preview` (or any static file server) to view the build. Opening `dist/index.html` straight off the filesystem with a `file://` URL will not work, because the bundle requests its assets over HTTP.
 
+The build honours `VITE_BASE_PATH`, which defaults to `/`. A host that serves the app from a subdirectory — a GitHub Pages project site, for instance — needs that prefix:
+
+```bash
+VITE_BASE_PATH=/LastMile-Hospital/ npm run build
+```
+
+### Deploying
+
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) builds and publishes the dashboard to GitHub Pages. It runs lint, typecheck and tests first, so a deploy cannot publish something that would have failed a pull request.
+
+It is **manual-trigger only** until you turn it on:
+
+1. **Settings → Pages → Source: GitHub Actions**
+2. Run the workflow once from the **Actions** tab
+3. Optionally uncomment the `push:` trigger in the workflow to deploy on every change to `lastmile/`
+
+The deployed build runs the browser simulation, since GitHub Pages serves static files and there is no controller behind it. That is the intended default — see [Data Sources](#data-sources).
+
 ### Checks
 
 ```bash

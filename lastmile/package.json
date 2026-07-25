@@ -2,7 +2,7 @@
   "name": "lastmile-dashboard",
   "private": true,
   "version": "0.1.0",
-  "description": "React dashboard for the LastMile Hospital Network Triage System \u00e2\u20ac\u201d visualizes SDN priority queuing for critical medical traffic.",
+  "description": "React dashboard for the LastMile Hospital Network Triage System â€” visualizes SDN priority queuing for critical medical traffic.",
   "author": "Guru R Bharadwaj",
   "license": "MIT",
   "repository": {
@@ -37,6 +37,7 @@
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/d3": "^7.4.3",
+    "@types/node": "^26.1.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",

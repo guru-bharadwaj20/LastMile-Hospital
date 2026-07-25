@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { DEPARTMENT_NODES, departmentColor } from '../simulation/networkState';
+import { DEPARTMENT_NODES, departmentColor } from '../simulation';
 
 /**
  * NodeFailurePanel — Infrastructure failure simulation panel.

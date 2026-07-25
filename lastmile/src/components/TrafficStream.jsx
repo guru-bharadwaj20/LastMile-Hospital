@@ -8,7 +8,7 @@ import {
   PRIORITY_RANK,
   departmentColor,
   getNodeCenter,
-} from '../simulation/networkState';
+} from '../simulation';
 
 // Module scope: derived once from a static table, so the effect below needs
 // no dependency on it and cannot go stale.

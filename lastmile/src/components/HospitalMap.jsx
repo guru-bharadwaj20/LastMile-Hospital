@@ -6,7 +6,7 @@ import {
   departmentColor,
   getRoomCenter,
   getNodeCenter,
-} from '../simulation/networkState';
+} from '../simulation';
 
 /**
  * HospitalMap — SVG hospital floor plan with department rooms,

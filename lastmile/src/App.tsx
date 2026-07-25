@@ -9,13 +9,16 @@ import EventLog from './components/EventLog';
 import PriorityLegend from './components/PriorityLegend';
 import NodeFailurePanel from './components/NodeFailurePanel';
 import ComparisonView from './components/ComparisonView';
+import DataSourceBadge from './components/DataSourceBadge';
 import { useNetworkSimulation } from './simulation';
+import { useControllerLink } from './api/useControllerLink';
 
 /**
  * App — Main application layout for LastMile Hospital Network Triage System.
  */
 export default function App() {
   const { state, actions } = useNetworkSimulation();
+  const link = useControllerLink();
   const [showComparison, setShowComparison] = useState(false);
   const [openPanels, setOpenPanels] = useState({
     emergency: true,
@@ -72,6 +75,7 @@ export default function App() {
           </div>
 
           <div className="header-actions">
+            <DataSourceBadge link={link} />
             <motion.button
               className="header-comparison-btn"
               onClick={openComparison}

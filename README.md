@@ -437,6 +437,87 @@ mininet> sh ovs-ofctl -O OpenFlow13 dump-flows s1
 
 ---
 
+## Limitations
+
+Read this before quoting anything from this repository. Every claim here has a
+boundary, and the boundaries are more useful than the claims.
+
+### This is an emulation, not a hospital
+
+The network is Mininet on one machine: Linux network namespaces, veth pairs,
+and `tc` shaping standing in for switch ASICs. That is excellent for
+demonstrating control-plane logic and genuinely useful for comparing queuing
+policies against each other. It says **nothing** about how the same policy
+behaves on real hardware, where forwarding is done by silicon with fixed
+buffer sizes and different scheduling behaviour under burst.
+
+Four hosts and three switches is a demonstration topology. A hospital campus
+has thousands of endpoints, redundant paths, VLANs, and a topology that
+re-converges while you are looking at it. See
+[what breaks at scale](docs/ARCHITECTURE.md#what-breaks-at-scale) for the
+specific things that would have to change.
+
+### The dashboard's figures are a model
+
+Unless the [Measured Results](#measured-results--priority-queuing) table has
+been populated by an actual benchmark run, every latency number the dashboard
+displays comes from a formula with chosen constants. The UI says
+`SIMULATION` on screen at all times for this reason, and the comparison
+overlay repeats it. The shape of the curves reflects how strict priority
+queuing behaves under congestion; the specific milliseconds are illustrative.
+
+### Classification trusts the endpoints
+
+Traffic is classified by the DSCP mark the *sender* applies. Any host can mark
+its traffic P1 — `setsockopt(IP_TOS, 0xB8)` is one line and needs no
+privileges on most systems. A compromised or simply misconfigured workstation
+can therefore put its bulk transfer in the same queue as a cardiac alert.
+
+Guaranteed floors mean it cannot starve the other classes entirely, but it can
+degrade the class that matters most. The mitigation — policing marks at the
+network edge so trust is enforced where a device attaches rather than assumed
+everywhere — is **not implemented here**.
+
+### The control plane is not secured
+
+- OpenFlow runs over plain TCP. Production deployments should use TLS with
+  mutual certificate authentication.
+- The REST API has no authentication and permissive CORS. It is read-only,
+  which bounds the exposure to information disclosure, and it would not be
+  acceptable on a hospital network or if it ever accepted writes.
+- Table-miss punts unmatched packets to the controller with no rate limit,
+  which is an unbounded denial-of-service path against the control plane.
+
+Full detail in the [threat model](docs/ARCHITECTURE.md#threat-model).
+
+### Not a medical device
+
+Nothing here is clinically validated, and none of it has been near a
+regulatory process. Network equipment carrying clinical alerting in a real
+hospital sits inside a safety case: hazard analysis, IEC 80001 risk management
+for IT networks incorporating medical devices, procurement and change control.
+This project addresses none of that. Treating a demonstration as evidence of
+clinical safety would be a serious category error.
+
+### Ryu is unmaintained
+
+Ryu's last release was 4.34 and it does not import on Python 3.12+ because of
+its `eventlet` dependency, which is why the containers pin 3.11. The
+maintained fork [`os-ken`](https://opendev.org/openstack/os-ken) is close to a
+drop-in replacement and is the obvious migration. Anything built on Ryu today
+is building on a dependency with no upstream.
+
+### What would be needed to take this further
+
+1. Measured results from the benchmark harness on real switches, not emulated links
+2. Edge policing of DSCP marks, so classification is enforced rather than trusted
+3. TLS and authentication on both OpenFlow and the REST API
+4. LLDP topology discovery in place of a hardcoded line topology
+5. Controller redundancy, and a decided data-plane behaviour when the controller is lost
+6. Destination-subnet matching rather than per-host rules, to keep flow tables within switch TCAM
+
+---
+
 ## Documentation
 
 | Document | Covers |

@@ -80,7 +80,27 @@ These numbers come from actual `ping` and `iperf` runs against the Mininet topol
 | Packet loss, flow rule deleted | 100% |
 | Regression test (routes stable after reinstall) | PASS |
 
-**Scope note.** These establish that the control plane works: paths are deterministic, the topology forwards at line rate, and routes survive a controller reconnect. They are *not* yet a measurement of priority queuing under congestion — that requires the QoS work described in the roadmap, measured by [`SDN_files/benchmark.py`](SDN_files/).
+**Scope note.** These establish that the control plane works: paths are deterministic, the topology forwards at line rate, and routes survive a controller reconnect. They are *not* a measurement of priority queuing under congestion — that is the section below.
+
+---
+
+## Measured Results — Priority Queuing
+
+Produced by [`SDN_files/benchmark.py`](SDN_files/benchmark.py), which drives controlled background load, probes with traffic marked for each class, and records latency percentiles with HTB queues enabled and disabled. The table is generated from the resulting CSV by [`SDN_files/report_results.py`](SDN_files/report_results.py) — no figure in it is typed by hand.
+
+<!-- BENCHMARK:START -->
+_No benchmark results recorded yet._
+
+Run the harness on a Mininet host and regenerate this section:
+
+```bash
+sudo python3 SDN_files/benchmark.py --out results/qos_benchmark.csv
+python3 SDN_files/report_results.py results/qos_benchmark.csv --update-readme
+```
+<!-- BENCHMARK:END -->
+
+See [`results/README.md`](results/README.md) for the CSV schema, why the report
+quotes p99 rather than an average, and what a run does and does not establish.
 
 ---
 

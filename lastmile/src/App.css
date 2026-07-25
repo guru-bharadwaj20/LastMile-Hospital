@@ -228,6 +228,12 @@ svg {
   overflow: hidden;
   width: 100%;
   aspect-ratio: 800 / 450;
+  /* Flex so the map layer fills the stage. Without it the map SVG sizes to
+     its own intrinsic ratio and sits at the top, while the particle overlay
+     — absolutely positioned to inset:0 — covers the full stage. The two
+     layers then scale differently and the particles drift off the nodes,
+     which is the same misregistration a shared viewBox was meant to fix. */
+  display: flex;
 }
 
 @media (min-width: 1024px) {
@@ -324,14 +330,17 @@ svg {
 .hospital-map-container {
   flex: 1;
   display: flex;
-  flex-direction: column;
   position: relative;
+  min-width: 0;
   min-height: 0;
 }
 
+/* Fills the stage exactly, so preserveAspectRatio letterboxes it within the
+   same box the particle overlay uses. */
 .hospital-map-svg {
   width: 100%;
-  flex: 1;
+  height: 100%;
+  min-width: 0;
   min-height: 0;
 }
 
@@ -504,6 +513,9 @@ svg {
 .load-meter-gauge {
   flex: 1;
   min-height: 120px;
+  /* Capped, or on a tall viewport the gauge stretches to fill the column and
+     squeezes the bandwidth breakdown off the bottom of the pane. */
+  max-height: 340px;
   width: 100%;
   display: grid;
   grid-template-columns: 40px 1fr;

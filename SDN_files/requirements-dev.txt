@@ -1,0 +1,7 @@
+# Development and CI dependencies.
+#
+# Deliberately does not include ryu: topology.py and flow_table.py are pure
+# Python, so the forwarding table can be tested on any machine and in CI
+# without Mininet, Open vSwitch, or a Linux kernel.
+pytest>=8.0
+ruff>=0.6

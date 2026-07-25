@@ -1,4 +1,91 @@
-# Static Routing using SDN Controller
+# LastMile SDN Layer
+
+Two controllers share one topology and one derived forwarding table:
+
+| Controller | What it does | Use it for |
+|---|---|---|
+| `static_controller.py` | Deterministic IPv4 forwarding, no QoS | Routing correctness, the original ping/iperf evidence |
+| `qos_controller.py` | The same forwarding, plus `OFPActionSetQueue` per traffic class | Priority enforcement and benchmarking |
+
+## Priority Enforcement (QoS)
+
+The triage model is enforced in the data plane, not just drawn in a browser.
+Each class binds a DSCP codepoint to an Open vSwitch HTB queue:
+
+| Class | Queue | DSCP | Guaranteed | Ceiling | HTB band | Traffic |
+|---|---|---|---|---|---|---|
+| P1 | q0 | EF (46) | 35% | 100% | 0 | Cardiac arrest, Code Blue, crash cart |
+| P2 | q1 | AF41 (34) | 25% | 80% | 1 | ICU vitals, ventilator alarms, surgical monitoring |
+| P3 | q2 | AF31 (26) | 20% | 60% | 2 | Lab results, imaging metadata, pharmacy orders |
+| P4 | q3 | AF21 (18) | 12% | 40% | 3 | Administrative uploads, EMR sync, reports |
+| P5 | q4 | BE (0) | 8% | 25% | 4 | Staff WiFi, visitor internet, software updates |
+
+Guarantees total 100%, so every class keeps a floor even on a saturated link.
+Only P1 may burst to the full link; everything else is capped so it cannot
+crowd out clinical traffic.
+
+**Classification is by DSCP** because it has to survive the trip from the
+sending host to the switch. Six bits in the IP header, understood by every
+switch, and settable by an endpoint with `ping -Q`, `iperf3 --dscp`, or
+`setsockopt(IP_TOS)`. The cost is that classification is only as trustworthy
+as the endpoints — see the threat model in [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md).
+
+### Rule layout
+
+Per switch, highest OpenFlow priority first:
+
+```
+110  in_port + ipv4_dst + ip_dscp  ->  SetQueue(n), Output(port)
+100  in_port + ipv4_dst            ->  SetQueue(q4), Output(port)
+  0  table-miss                    ->  Controller
+```
+
+Unmarked traffic still forwards correctly, but lands in the best-effort queue
+rather than inheriting a clinical guarantee. Fail-open on reachability,
+fail-safe on priority.
+
+`OFPActionSetQueue` is emitted before `OFPActionOutput`: actions in an
+`APPLY_ACTIONS` list run in order, so the queue must be selected before the
+packet reaches the port.
+
+### Running the QoS layer
+
+```bash
+# Terminal 1 — controller
+source ~/ryu-env/bin/activate
+ryu-manager --ofp-tcp-listen-port 6633 SDN_files/qos_controller.py
+
+# Terminal 2 — rate-limited topology (queues do nothing on an uncapped link)
+sudo mn --custom SDN_files/static_topo.py --topo qostopo \
+  --controller remote,port=6633 --switch ovsk,protocols=OpenFlow13
+
+# Terminal 3 — create the queues OpenFlow selects
+sudo python3 SDN_files/setup_qos.py apply
+sudo python3 SDN_files/setup_qos.py show
+```
+
+Preview the exact `ovs-vsctl` commands without touching anything:
+
+```bash
+python3 SDN_files/setup_qos.py apply --dry-run
+python3 SDN_files/qos.py                # print the policy table
+```
+
+Then mark traffic to select a class. Note `ping -Q` takes a full ToS byte,
+which is the DSCP value shifted left by two:
+
+```bash
+mininet> h1 ping -Q 184 -c 20 10.0.0.3      # 46 << 2, EF, P1
+mininet> h2 iperf3 -c 10.0.0.4 --dscp 0 -t 30   # best effort background load
+```
+
+Tear down with `sudo python3 SDN_files/setup_qos.py clear`, which also
+destroys the orphaned `qos` and `queue` records that would otherwise
+accumulate across restarts.
+
+---
+
+## Static Routing (foundation)
 
 ## Problem Statement
 Implement static routing paths using controller-installed flow rules in an SDN environment using Mininet and Ryu controller. The controller manually installs OpenFlow flow rules on each switch to define fixed routing paths between hosts, demonstrating controller-switch interaction and network behavior observation.

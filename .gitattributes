@@ -1,0 +1,24 @@
+# Normalise line endings in the repository to LF.
+* text=auto eol=lf
+
+# These MUST be LF regardless of platform. A shell script or Dockerfile
+# checked out with CRLF fails inside a Linux container with an obscure
+# "\r: command not found", and a Makefile with CRLF fails on GNU make.
+*.sh            text eol=lf
+*.Dockerfile    text eol=lf
+Dockerfile      text eol=lf
+Makefile        text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+*.conf          text eol=lf
+
+# Binary: never touch.
+*.png           binary
+*.jpg           binary
+*.gif           binary
+*.ico           binary
+*.woff          binary
+*.woff2         binary
+
+# Generated; collapse in diffs and exclude from language statistics.
+package-lock.json  linguist-generated=true -diff

@@ -1,0 +1,15 @@
+# Keep the build context small and the layers cacheable.
+.git
+.github
+**/node_modules
+**/dist
+**/coverage
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/*.log
+docs
+results/*.csv
+SDN_files/Screenshots
+.vscode
+.idea

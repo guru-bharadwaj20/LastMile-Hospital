@@ -214,6 +214,32 @@ Any environment where multiple traffic classes share a constrained network and p
 
 ---
 
+## Quick Start
+
+The dashboard alone needs nothing but Docker, and runs the browser
+simulation:
+
+```bash
+docker compose up --build dashboard      # http://localhost:8081
+```
+
+The full stack — controller, emulated network, and dashboard reading live
+counters:
+
+```bash
+docker compose --profile sdn up --build  # http://localhost:8081/?mode=live
+```
+
+The Mininet service needs `--privileged` and a Linux host kernel with the
+`openvswitch` module. [`docker/README.md`](docker/README.md) sets out exactly
+what works on which platform, and says plainly when not to trust a benchmark
+run.
+
+Common tasks are wrapped in a `Makefile` — `make help` lists them, `make check`
+runs everything CI runs.
+
+---
+
 ## Running the Dashboard
 
 ### Prerequisites

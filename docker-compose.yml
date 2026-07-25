@@ -1,0 +1,77 @@
+# LastMile — full stack.
+#
+#   docker compose up dashboard          dashboard only, browser simulation
+#   docker compose --profile sdn up      controller + Mininet + dashboard
+#   docker compose --profile bench run --rm benchmark
+#
+# The Mininet service needs --privileged and a Linux host kernel with the
+# openvswitch module. See docker/README.md for what that means on macOS and
+# Windows.
+
+services:
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/dashboard.Dockerfile
+    image: lastmile/dashboard
+    ports:
+      - "8081:80"
+    restart: unless-stopped
+
+  controller:
+    build:
+      context: .
+      dockerfile: docker/controller.Dockerfile
+    image: lastmile/controller
+    profiles: ["sdn", "bench"]
+    ports:
+      - "6633:6633"   # OpenFlow
+      - "8080:8080"   # REST + SSE
+    restart: unless-stopped
+
+  mininet:
+    build:
+      context: .
+      dockerfile: docker/mininet.Dockerfile
+    image: lastmile/mininet
+    profiles: ["sdn"]
+    depends_on:
+      controller:
+        condition: service_healthy
+    environment:
+      CONTROLLER_HOST: controller
+      CONTROLLER_PORT: "6633"
+    # Mininet creates network namespaces, veth pairs and tc qdiscs. None of
+    # that is possible without these.
+    privileged: true
+    network_mode: host
+    cap_add: ["NET_ADMIN", "SYS_ADMIN", "SYS_NICE"]
+    volumes:
+      - /lib/modules:/lib/modules:ro
+      - ./results:/app/results
+    # Mininet's CLI is interactive; without these the container exits at once.
+    stdin_open: true
+    tty: true
+    command: ["topology"]
+
+  # One-shot benchmark run. Builds its own topology, so it does not need the
+  # mininet service to be up.
+  benchmark:
+    build:
+      context: .
+      dockerfile: docker/mininet.Dockerfile
+    image: lastmile/mininet
+    profiles: ["bench"]
+    depends_on:
+      controller:
+        condition: service_healthy
+    environment:
+      CONTROLLER_HOST: controller
+      CONTROLLER_PORT: "6633"
+    privileged: true
+    network_mode: host
+    cap_add: ["NET_ADMIN", "SYS_ADMIN", "SYS_NICE"]
+    volumes:
+      - /lib/modules:/lib/modules:ro
+      - ./results:/app/results
+    command: ["benchmark"]

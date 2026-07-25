@@ -1,3 +1,13 @@
+"""
+static_controller.py — Ryu app installing deterministic IPv4 forwarding.
+
+The forwarding rules are derived from topology.py by flow_table.py rather
+than transcribed here by hand, so the topology is the single source of truth
+and the table can be tested without Ryu or Mininet installed.
+"""
+import os
+import sys
+
 from ryu.base import app_manager
 from ryu.controller import ofp_event
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
@@ -5,42 +15,17 @@ from ryu.controller.handler import set_ev_cls
 from ryu.ofproto import ofproto_v1_3
 from ryu.lib.packet import packet, ethernet, arp
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from flow_table import FLOW_PRIORITY, STATIC_FLOWS  # noqa: E402
+
+
 class StaticRouter(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
 
     def __init__(self, *args, **kwargs):
         super(StaticRouter, self).__init__(*args, **kwargs)
-
-        self.static_flows = {
-            1: [
-                {'in_port': 1, 'ipv4_dst': '10.0.0.3', 'out_port': 3},
-                {'in_port': 1, 'ipv4_dst': '10.0.0.4', 'out_port': 3},
-                {'in_port': 2, 'ipv4_dst': '10.0.0.3', 'out_port': 3},
-                {'in_port': 2, 'ipv4_dst': '10.0.0.4', 'out_port': 3},
-                {'in_port': 3, 'ipv4_dst': '10.0.0.1', 'out_port': 1},
-                {'in_port': 3, 'ipv4_dst': '10.0.0.2', 'out_port': 2},
-                # same switch: h1 <-> h2
-                {'in_port': 1, 'ipv4_dst': '10.0.0.2', 'out_port': 2},
-                {'in_port': 2, 'ipv4_dst': '10.0.0.1', 'out_port': 1},
-            ],
-            2: [
-                {'in_port': 1, 'ipv4_dst': '10.0.0.3', 'out_port': 2},
-                {'in_port': 1, 'ipv4_dst': '10.0.0.4', 'out_port': 2},
-                {'in_port': 2, 'ipv4_dst': '10.0.0.1', 'out_port': 1},
-                {'in_port': 2, 'ipv4_dst': '10.0.0.2', 'out_port': 1},
-            ],
-            3: [
-                {'in_port': 3, 'ipv4_dst': '10.0.0.3', 'out_port': 1},
-                {'in_port': 3, 'ipv4_dst': '10.0.0.4', 'out_port': 2},
-                {'in_port': 1, 'ipv4_dst': '10.0.0.1', 'out_port': 3},
-                {'in_port': 1, 'ipv4_dst': '10.0.0.2', 'out_port': 3},
-                {'in_port': 2, 'ipv4_dst': '10.0.0.1', 'out_port': 3},
-                {'in_port': 2, 'ipv4_dst': '10.0.0.2', 'out_port': 3},
-                # same switch: h3 <-> h4
-                {'in_port': 1, 'ipv4_dst': '10.0.0.4', 'out_port': 2},
-                {'in_port': 2, 'ipv4_dst': '10.0.0.3', 'out_port': 1},
-            ],
-        }
+        self.static_flows = STATIC_FLOWS
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
@@ -80,7 +65,7 @@ class StaticRouter(app_manager.RyuApp):
             ofproto.OFPIT_APPLY_ACTIONS, actions)]
         mod = parser.OFPFlowMod(
             datapath=datapath,
-            priority=100,
+            priority=FLOW_PRIORITY,
             match=match,
             instructions=inst,
             idle_timeout=0,
@@ -118,3 +103,12 @@ class StaticRouter(app_manager.RyuApp):
                      else None
             )
             datapath.send_msg(out)
+            return
+
+        # Anything else reaching the controller hit the table-miss rule, which
+        # means no static route covered it. Logging makes that diagnosable
+        # rather than a silent blackhole.
+        self.logger.debug(
+            "Unmatched packet on switch %s port %s (ethertype 0x%04x) — dropped",
+            datapath.id, in_port, eth.ethertype,
+        )

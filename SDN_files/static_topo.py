@@ -1,27 +1,32 @@
+"""
+static_topo.py — Mininet topology, built from the shared description.
+
+The node and link definitions live in topology.py so that the controller
+derives its forwarding rules from exactly the same source this builds from.
+Link order is preserved, which is what keeps derived port numbers correct.
+"""
+import os
+import sys
+
 from mininet.topo import Topo
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from topology import HOSTS, LINKS, NETMASK, SWITCHES  # noqa: E402
 
 
 class StaticTopo(Topo):
     def build(self):
-        # Add 3 switches
-        s1 = self.addSwitch('s1')
-        s2 = self.addSwitch('s2')
-        s3 = self.addSwitch('s3')
+        for name in SWITCHES:
+            self.addSwitch(name)
 
-        # Add 4 hosts
-        h1 = self.addHost('h1', ip='10.0.0.1/24')
-        h2 = self.addHost('h2', ip='10.0.0.2/24')
-        h3 = self.addHost('h3', ip='10.0.0.3/24')
-        h4 = self.addHost('h4', ip='10.0.0.4/24')
+        for name, spec in HOSTS.items():
+            self.addHost(name, ip=spec['ip'] + NETMASK)
 
-        # Connect hosts to switches
-        self.addLink(h1, s1)
-        self.addLink(h2, s1)
-        self.addLink(h3, s3)
-        self.addLink(h4, s3)
+        # Added in declaration order: Mininet assigns switch port numbers
+        # sequentially as links attach, and flow_table.py relies on that.
+        for a, b in LINKS:
+            self.addLink(a, b)
 
-        # Connect switches in a line: s1 -- s2 -- s3
-        self.addLink(s1, s2)
-        self.addLink(s2, s3)
 
 topos = {'statictopo': StaticTopo}

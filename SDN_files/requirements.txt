@@ -1,0 +1,9 @@
+# Runtime dependencies for the SDN layer.
+#
+# Ryu is no longer actively maintained and does not import on Python 3.12+
+# because of its eventlet dependency. Python 3.11 is required.
+#
+# Mininet and Open vSwitch are installed from the system package manager, not
+# pip:  sudo apt install mininet openvswitch-switch
+ryu==4.34
+eventlet==0.30.2

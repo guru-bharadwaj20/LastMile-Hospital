@@ -1170,6 +1170,75 @@ svg {
   animation: pulse-glow 0.5s ease-in-out infinite;
 }
 
+/* ── Data Source Badge ─────────────────────────────────────── */
+/* Always visible, because unqualified simulated numbers are how this
+   project's original performance claims became misleading. */
+.source-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 1.2px;
+  white-space: nowrap;
+}
+
+.source-badge.demo {
+  color: var(--text-muted);
+}
+
+.source-badge.connecting {
+  color: var(--p3-moderate);
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.source-badge.live {
+  color: var(--p4-low);
+  border-color: rgba(52, 211, 153, 0.35);
+  background: rgba(52, 211, 153, 0.08);
+}
+
+.source-badge.unavailable {
+  color: var(--p2-urgent);
+  border-color: rgba(255, 107, 45, 0.4);
+  background: rgba(255, 107, 45, 0.08);
+}
+
+.source-badge-warn {
+  color: var(--p3-moderate);
+  border-left: 1px solid var(--border);
+  padding-left: 6px;
+}
+
+.source-badge-retry {
+  background: none;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  color: inherit;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 8px;
+  letter-spacing: 1px;
+  padding: 1px 5px;
+}
+
+.source-badge-retry:hover {
+  background: rgba(255, 107, 45, 0.15);
+}
+
+.source-badge .spin {
+  animation: spin 1.2s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Show Comparison Button */
 .header-comparison-btn {
   display: flex;

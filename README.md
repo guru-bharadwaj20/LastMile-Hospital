@@ -276,6 +276,51 @@ the Mininet host from the Mininet CLI.
 
 ---
 
+## Data Sources
+
+The dashboard runs in one of two modes, and it always says which on screen.
+
+| URL | Mode | Where the numbers come from |
+|---|---|---|
+| `/` | **Simulation** (default) | The in-browser model. No backend needed. |
+| `/?mode=live` | **Live** | Ryu controller at `http://127.0.0.1:8080` |
+| `/?controller=http://host:8080` | **Live** | A controller elsewhere |
+
+Simulation is the default so the deployed build works with no backend.
+
+In live mode the dashboard probes `/lastmile/health`, then subscribes to a
+server-sent event stream of real switch counters. **If the controller is
+unreachable it says so** — an amber `CONTROLLER UNREACHABLE` badge with a
+retry button — rather than quietly showing simulated numbers under a LIVE
+label. That distinction is the whole point of the badge.
+
+### Running live
+
+```bash
+ryu-manager --ofp-tcp-listen-port 6633 \
+  SDN_files/qos_controller.py SDN_files/rest_api.py
+```
+
+| Endpoint | Returns |
+|---|---|
+| `GET /lastmile/health` | Liveness, connected switch count |
+| `GET /lastmile/policy` | The QoS class table |
+| `GET /lastmile/topology` | Switches, hosts, department mapping |
+| `GET /lastmile/status` | Queue counters, observed shares, link load |
+| `GET /lastmile/events` | SSE stream of the above |
+
+Server-sent events rather than WebSockets: the flow is strictly one-way, the
+browser reconnects on its own, and it is plain HTTP with no upgrade handshake
+to negotiate through a lab proxy.
+
+**On the department mapping.** The dashboard draws eight departments; the test
+topology has four hosts. `api_model.HOST_ROLES` maps a few hosts onto
+department names so live counters have somewhere to land, and the topology
+endpoint reports `represented: false` for the rest. It is a demonstration
+mapping, not a claim that the emulated network is a hospital.
+
+---
+
 ## User Guide
 
 | Action | What to observe |

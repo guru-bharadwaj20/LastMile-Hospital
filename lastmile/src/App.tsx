@@ -42,7 +42,7 @@ export default function App() {
 
   const openComparison = useCallback(() => setShowComparison(true), []);
   const closeComparison = useCallback(() => setShowComparison(false), []);
-  const togglePanel = useCallback((panelKey) => {
+  const togglePanel = useCallback((panelKey: keyof typeof openPanels) => {
     setOpenPanels((prev) => ({ ...prev, [panelKey]: !prev[panelKey] }));
   }, []);
 
@@ -169,7 +169,14 @@ export default function App() {
   );
 }
 
-function AccordionSection({ title, isOpen, onToggle, children }) {
+interface AccordionSectionProps {
+  title: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}
+
+function AccordionSection({ title, isOpen, onToggle, children }: AccordionSectionProps) {
   const panelId = useId();
 
   return (

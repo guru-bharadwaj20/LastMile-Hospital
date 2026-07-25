@@ -1,14 +1,27 @@
 /**
- * useNetworkSimulation.js — React adapter over the pure engine.
+ * useNetworkSimulation.ts — React adapter over the pure engine.
  *
  * This module owns everything the engine deliberately does not: timers, the
- * wall clock, and React state. All decisions live in engine.js.
+ * wall clock, and React state. All decisions live in engine.ts.
  */
 import { useReducer, useEffect, useRef, useCallback, useMemo } from 'react';
 import { TIMING } from './constants';
 import { createInitialState, createSimulationContext, reduce } from './engine';
+import type { Action, AlertType, Priority, SimulationActions, SimulationState } from './types';
 
-export function useNetworkSimulation(options = {}) {
+export interface UseNetworkSimulationOptions {
+  random?: () => number;
+  now?: () => number;
+}
+
+export interface UseNetworkSimulationResult {
+  state: SimulationState;
+  actions: SimulationActions;
+}
+
+export function useNetworkSimulation(
+  options: UseNetworkSimulationOptions = {},
+): UseNetworkSimulationResult {
   // One context per mounted hook. Tests can inject deterministic sources.
   const ctx = useMemo(
     () => createSimulationContext(options),
@@ -17,17 +30,17 @@ export function useNetworkSimulation(options = {}) {
   );
 
   const [state, rawDispatch] = useReducer(
-    (s, action) => reduce(s, action, ctx),
+    (s: SimulationState, action: Action) => reduce(s, action, ctx),
     undefined,
     createInitialState,
   );
 
-  const startTimeRef = useRef(null);
-  const alertTimeoutRef = useRef(null);
-  const baselineTimeoutRef = useRef(null);
+  const startTimeRef = useRef<number>(0);
+  const alertTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const baselineTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Stable dispatch identity for the callbacks below.
-  const dispatch = useCallback((action) => rawDispatch(action), []);
+  const dispatch = useCallback((action: Action) => rawDispatch(action), []);
 
   // ── Load oscillation ────────────────────────────────────────
   useEffect(() => {
@@ -69,7 +82,7 @@ export function useNetworkSimulation(options = {}) {
   }, [dispatch]);
 
   // ── Actions ─────────────────────────────────────────────────
-  const triggerAlert = useCallback((alertType) => {
+  const triggerAlert = useCallback((alertType: AlertType) => {
     dispatch({ type: 'TRIGGER_ALERT', alertType });
 
     clearTimeout(alertTimeoutRef.current);
@@ -89,10 +102,11 @@ export function useNetworkSimulation(options = {}) {
   }, [ctx, dispatch]);
 
   const toggleNodeFailure = useCallback(
-    (name) => dispatch({ type: 'TOGGLE_NODE', name }), [dispatch]);
+    (name: string) => dispatch({ type: 'TOGGLE_NODE', name }), [dispatch]);
 
   const updatePriorityConfig = useCallback(
-    (rowId, level) => dispatch({ type: 'SET_PRIORITY', rowId, level }), [dispatch]);
+    (rowId: string, level: Priority) => dispatch({ type: 'SET_PRIORITY', rowId, level }),
+    [dispatch]);
 
   // ── Cleanup ─────────────────────────────────────────────────
   useEffect(() => () => {
@@ -100,7 +114,7 @@ export function useNetworkSimulation(options = {}) {
     clearTimeout(baselineTimeoutRef.current);
   }, []);
 
-  const actions = useMemo(() => ({
+  const actions = useMemo<SimulationActions>(() => ({
     triggerAlert,
     simulateStress,
     resetNetwork,

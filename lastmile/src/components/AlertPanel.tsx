@@ -2,13 +2,29 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Activity, Zap, Wifi, RotateCcw, Lock } from 'lucide-react';
 import { PRIORITY_COLORS, PRIORITY_LEVELS } from '../simulation';
+import type { Alert, AlertType, Priority, SimulationActions, SimulationState } from '../simulation';
+import { cssVars } from '../lib/cssVars';
 
 /**
  * AlertPanel — Sidebar sections: emergency console, active alerts,
  * and priority configuration.
  */
 
-const TRIGGERS = [
+interface PanelProps {
+  state: SimulationState;
+  actions: SimulationActions;
+}
+
+interface TriggerDef {
+  id: string;
+  label: string;
+  className: string;
+  icon: typeof AlertTriangle;
+  action: 'triggerAlert' | 'simulateStress' | 'resetNetwork';
+  param?: AlertType;
+}
+
+const TRIGGERS: TriggerDef[] = [
   { id: 'cardiac',    label: 'Cardiac Arrest — ICU Bed 4',      className: 'critical', icon: AlertTriangle, action: 'triggerAlert',  param: 'cardiac' },
   { id: 'ventilator', label: 'Ventilator Alarm — ICU Bed 7',    className: 'urgent',   icon: Activity,      action: 'triggerAlert',  param: 'ventilator' },
   { id: 'crash-cart', label: 'Crash Cart — Surgery Block B',    className: 'moderate', icon: Zap,           action: 'triggerAlert',  param: 'crashcart' },
@@ -16,7 +32,7 @@ const TRIGGERS = [
   { id: 'reset',      label: 'Reset Network',                   className: 'reset',    icon: RotateCcw,     action: 'resetNetwork' },
 ];
 
-export function EmergencyConsoleSection({ state, actions }) {
+export function EmergencyConsoleSection({ state, actions }: PanelProps) {
   const isStressed = state.activeStreams.some(s => s.id.startsWith('stress-'));
 
   return (
@@ -31,7 +47,7 @@ export function EmergencyConsoleSection({ state, actions }) {
             id={`trigger-${trigger.id}`}
             className={`trigger-btn ${trigger.className}`}
             onClick={() => {
-              if (trigger.action === 'triggerAlert') actions.triggerAlert(trigger.param);
+              if (trigger.action === 'triggerAlert' && trigger.param) actions.triggerAlert(trigger.param);
               else if (trigger.action === 'simulateStress') actions.simulateStress();
               else if (trigger.action === 'resetNetwork') actions.resetNetwork();
             }}
@@ -47,7 +63,7 @@ export function EmergencyConsoleSection({ state, actions }) {
   );
 }
 
-export function ActiveAlertsSection({ state }) {
+export function ActiveAlertsSection({ state }: { state: SimulationState }) {
   if (state.activeAlerts.length === 0) {
     return <p className="panel-empty">NO ACTIVE ALERTS</p>;
   }
@@ -63,7 +79,7 @@ export function ActiveAlertsSection({ state }) {
   );
 }
 
-export function PriorityConfigurationSection({ state, actions }) {
+export function PriorityConfigurationSection({ state, actions }: PanelProps) {
   return (
     <table className="priority-table">
       <caption className="visually-hidden">Traffic class to priority level mapping</caption>
@@ -71,7 +87,7 @@ export function PriorityConfigurationSection({ state, actions }) {
         {state.priorityConfig.map((item) => {
           const color = PRIORITY_COLORS[item.level];
           return (
-            <tr key={item.id} style={{ '--tone': color }}>
+            <tr key={item.id} style={cssVars({ '--tone': color })}>
               <td>
                 <span className="priority-dot" />
                 <span className="priority-type">{item.type}</span>
@@ -90,7 +106,7 @@ export function PriorityConfigurationSection({ state, actions }) {
                     className="priority-select"
                     value={item.level}
                     aria-label={`Priority level for ${item.type}`}
-                    onChange={(e) => actions.updatePriorityConfig(item.id, e.target.value)}
+                    onChange={(e) => actions.updatePriorityConfig(item.id, e.target.value as Priority)}
                   >
                     {PRIORITY_LEVELS.map(level => (
                       <option key={level} value={level}>{level}</option>
@@ -109,7 +125,7 @@ export function PriorityConfigurationSection({ state, actions }) {
 /**
  * AlertItem — Single active alert with live elapsed timer.
  */
-function AlertItem({ alert }) {
+function AlertItem({ alert }: { alert: Alert }) {
   const [elapsed, setElapsed] = useState(() => Math.floor((Date.now() - alert.firedAt) / 1000));
 
   useEffect(() => {
@@ -119,7 +135,7 @@ function AlertItem({ alert }) {
     return () => clearInterval(interval);
   }, [alert.firedAt]);
 
-  const formatElapsed = (s) => {
+  const formatElapsed = (s: number): string => {
     const mins = Math.floor(s / 60);
     const secs = s % 60;
     return mins > 0 ? `${mins}m ${secs.toString().padStart(2, '0')}s` : `${secs}s`;
@@ -134,7 +150,7 @@ function AlertItem({ alert }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.3 }}
-      style={{ '--tone': color }}
+      style={cssVars({ '--tone': color })}
     >
       <span className="alert-badge">{alert.priority}</span>
       <div className="alert-info">

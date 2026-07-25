@@ -1,8 +1,10 @@
 import { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PRIORITY_COLORS } from '../simulation';
+import type { EventStatus, LogEntry } from '../simulation';
+import { cssVars } from '../lib/cssVars';
 
-const STATUS_LABEL = {
+const STATUS_LABEL: Record<EventStatus, string> = {
   delivered: '✓ DELIVERED',
   dropped: '✗ DROPPED',
   note: 'REFERENCE',
@@ -11,8 +13,13 @@ const STATUS_LABEL = {
 /**
  * EventLog — Scrolling real-time network event feed.
  */
-export default function EventLog({ eventLog, onShowComparison }) {
-  const scrollRef = useRef(null);
+interface EventLogProps {
+  eventLog: LogEntry[];
+  onShowComparison?: () => void;
+}
+
+export default function EventLog({ eventLog, onShowComparison }: EventLogProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const newestId = eventLog.length > 0 ? eventLog[0].id : null;
 
   // Keyed on the newest entry's id, not on length: the log is capped, so once
@@ -56,7 +63,7 @@ export default function EventLog({ eventLog, onShowComparison }) {
               <motion.div
                 key={event.id}
                 className={`event-entry kind-${event.kind ?? 'traffic'} ${isCritical ? 'critical-flash' : ''}`}
-                style={{ '--tone': color }}
+                style={cssVars({ '--tone': color })}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0 }}

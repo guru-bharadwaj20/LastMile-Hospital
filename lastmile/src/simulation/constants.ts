@@ -1,11 +1,20 @@
 /**
- * constants.js — Static description of the simulated hospital network.
+ * constants.ts — Static description of the simulated hospital network.
  *
  * Pure data and pure geometry helpers. No state, no React, no time.
  */
+import type {
+  AlertType,
+  BandwidthAllocation,
+  Department,
+  Point,
+  Priority,
+  PriorityRow,
+  Stream,
+} from './types';
 
 // ── Priority Colours ───────────────────────────────────────────
-export const PRIORITY_COLORS = {
+export const PRIORITY_COLORS: Record<Priority, string> = {
   P1: '#ff2d2d',
   P2: '#ff6b2d',
   P3: '#fbbf24',
@@ -16,9 +25,9 @@ export const PRIORITY_COLORS = {
 export const SERVER_COLOR = '#38bdf8';
 
 /** Numeric rank for ordering comparisons. P1 is the most urgent. */
-export const PRIORITY_RANK = { P1: 1, P2: 2, P3: 3, P4: 4, P5: 5 };
+export const PRIORITY_RANK: Record<Priority, number> = { P1: 1, P2: 2, P3: 3, P4: 4, P5: 5 };
 
-export const PRIORITY_LEVELS = ['P1', 'P2', 'P3', 'P4', 'P5'];
+export const PRIORITY_LEVELS: readonly Priority[] = ['P1', 'P2', 'P3', 'P4', 'P5'];
 
 // ── Shared Map Geometry ────────────────────────────────────────
 // HospitalMap and TrafficStream render as two stacked SVGs over the same
@@ -33,7 +42,7 @@ const NODE_DY = { department: 20, server: 22 };
 // `baselinePriority` is the traffic class a department emits at rest, and it
 // drives both the room colour and the particle colour, so the two can never
 // disagree. `alertCapable` marks departments that can originate a P1 alert.
-export const DEPARTMENTS = [
+export const DEPARTMENTS: Department[] = [
   { id: 'icu',       label: 'ICU',       baselinePriority: 'P2', alertCapable: true,  x: 80,  y: 20,  w: 160, h: 90 },
   { id: 'emergency', label: 'ER',        baselinePriority: 'P2', alertCapable: true,  x: 320, y: 20,  w: 160, h: 90 },
   { id: 'surgery',   label: 'SURGERY',   baselinePriority: 'P2', alertCapable: true,  x: 560, y: 20,  w: 160, h: 90 },
@@ -44,21 +53,25 @@ export const DEPARTMENTS = [
   { id: 'server',    label: 'SERVER',    isServer: true,                               x: 300, y: 155, w: 200, h: 100 },
 ];
 
-export const SERVER = DEPARTMENTS.find(d => d.isServer);
-export const DEPARTMENT_NODES = DEPARTMENTS.filter(d => !d.isServer);
+const serverDept = DEPARTMENTS.find(d => d.isServer);
+if (!serverDept) throw new Error('DEPARTMENTS must contain exactly one server');
+
+export const SERVER: Department = serverDept;
+export const DEPARTMENT_NODES: Department[] = DEPARTMENTS.filter(d => !d.isServer);
 
 /** Colour for a department, derived from its priority so nothing can drift. */
-export function departmentColor(dept) {
-  return dept.isServer ? SERVER_COLOR : PRIORITY_COLORS[dept.baselinePriority];
+export function departmentColor(dept: Department): string {
+  if (dept.isServer || !dept.baselinePriority) return SERVER_COLOR;
+  return PRIORITY_COLORS[dept.baselinePriority];
 }
 
 /** Centre of a department's room rectangle. */
-export function getRoomCenter(dept) {
+export function getRoomCenter(dept: Department): Point {
   return { x: dept.x + dept.w / 2, y: dept.y + dept.h / 2 };
 }
 
 /** Centre of a department's network node circle. Traffic flows between these. */
-export function getNodeCenter(dept) {
+export function getNodeCenter(dept: Department): Point {
   return {
     x: dept.x + dept.w / 2,
     y: dept.y + dept.h / 2 + (dept.isServer ? NODE_DY.server : NODE_DY.department),
@@ -83,7 +96,14 @@ export const TIMING = {
 // ── Latency Model ──────────────────────────────────────────────
 // Illustrative constants, not measurements. See "Simulation Parameters" in
 // the root README for the reasoning and the caveat.
-export const LATENCY = {
+export const LATENCY: {
+  base: Record<Priority, number>;
+  loadFactor: number;
+  jitter: number;
+  untriagedBase: number;
+  untriagedLoadFactor: number;
+  untriagedJitter: number;
+} = {
   base: { P1: 8, P2: 25, P3: 80, P4: 180, P5: 250 },
   loadFactor: 2.8,
   jitter: 10,
@@ -106,7 +126,7 @@ export const LOAD = {
   smoothing: 0.15,
 };
 
-export const BANDWIDTH = {
+export const BANDWIDTH: Record<'idle' | 'normal' | 'congested', BandwidthAllocation> = {
   idle:     { p1: 0,  p2: 0,  p3: 0,  p4: 0,  p5: 0 },
   normal:   { p1: 25, p2: 20, p3: 25, p4: 18, p5: 12 },
   congested:{ p1: 35, p2: 25, p3: 20, p4: 12, p5: 8 },
@@ -122,7 +142,7 @@ export const P5_DROP_CHANCE = 0.4;
 // ── Priority Config (sidebar table) ────────────────────────────
 // `streamIds` is the authoritative link between a config row and the streams
 // it governs. Every non-alert stream appears in exactly one row.
-export const DEFAULT_PRIORITY_CONFIG = [
+export const DEFAULT_PRIORITY_CONFIG: PriorityRow[] = [
   { id: 'critical',   type: 'Cardiac / Code Blue Alerts',   level: 'P1', streamIds: [], locked: true },
   { id: 'vitals',     type: 'Vitals / Monitoring',          level: 'P2', streamIds: ['stream-icu', 'stream-er', 'stream-surgery'] },
   { id: 'clinical',   type: 'Imaging / Lab / Pharmacy',     level: 'P3', streamIds: ['stream-radiology', 'stream-pharmacy'] },
@@ -131,7 +151,7 @@ export const DEFAULT_PRIORITY_CONFIG = [
 ];
 
 // ── Traffic Streams ────────────────────────────────────────────
-export function createBaselineStreams() {
+export function createBaselineStreams(): Stream[] {
   return [
     { id: 'stream-icu',       from: 'ICU',       to: 'SERVER', priority: 'P2', label: 'ICU Vitals',         particleCount: 4, speed: SPEED.fast,   active: true },
     { id: 'stream-er',        from: 'ER',        to: 'SERVER', priority: 'P2', label: 'Triage Data',        particleCount: 3, speed: SPEED.fast,   active: true },
@@ -143,7 +163,7 @@ export function createBaselineStreams() {
   ];
 }
 
-export function createStressStreams() {
+export function createStressStreams(): Stream[] {
   return [
     { id: 'stress-radiology', from: 'RADIOLOGY', to: 'SERVER', priority: 'P4', label: 'Bulk Image Transfer', particleCount: 3, speed: SPEED.slow,   active: true },
     { id: 'stress-admin',     from: 'ADMIN',     to: 'SERVER', priority: 'P4', label: 'Admin Backup',        particleCount: 3, speed: SPEED.slow,   active: true },
@@ -152,7 +172,7 @@ export function createStressStreams() {
 }
 
 // ── Alert Definitions ──────────────────────────────────────────
-export const ALERT_MAP = {
+export const ALERT_MAP: Record<AlertType, { from: string; label: string; priority: Priority }> = {
   cardiac:    { from: 'ICU',     label: 'Cardiac Arrest — ICU Bed 4',     priority: 'P1' },
   ventilator: { from: 'ICU',     label: 'Ventilator Alarm — ICU Bed 7',   priority: 'P1' },
   crashcart:  { from: 'SURGERY', label: 'Crash Cart Request — Surgery B', priority: 'P1' },

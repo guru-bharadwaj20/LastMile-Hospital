@@ -1,11 +1,18 @@
 import { motion } from 'framer-motion';
 import { DEPARTMENT_NODES, departmentColor } from '../simulation';
+import type { NodeMap, SimulationActions } from '../simulation';
+import { cssVars } from '../lib/cssVars';
 
 /**
  * NodeFailurePanel — Infrastructure failure simulation panel.
  * Displays all department nodes with KILL/RESTORE controls.
  */
-export default function NodeFailurePanel({ nodes, actions }) {
+interface NodeFailurePanelProps {
+  nodes: NodeMap;
+  actions: SimulationActions;
+}
+
+export default function NodeFailurePanel({ nodes, actions }: NodeFailurePanelProps) {
   return (
     <div className="node-failure-list">
       {DEPARTMENT_NODES.map(dept => {
@@ -16,7 +23,7 @@ export default function NodeFailurePanel({ nodes, actions }) {
           <motion.div
             key={dept.id}
             className={`node-failure-row ${isActive ? 'online' : 'offline'}`}
-            style={{ '--tone': color }}
+            style={cssVars({ '--tone': color })}
             layout
             transition={{ duration: 0.2 }}
           >

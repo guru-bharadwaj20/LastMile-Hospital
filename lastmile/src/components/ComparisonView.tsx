@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useRef, useId } from 'react';
 import { motion } from 'framer-motion';
 import { X, Zap, Wifi } from 'lucide-react';
+import type { SimulationState } from '../simulation';
+import { cssVars } from '../lib/cssVars';
 
 /**
  * ComparisonView — Full-screen overlay showing side-by-side comparison
@@ -11,14 +13,21 @@ import { X, Zap, Wifi } from 'lucide-react';
  * parent's twice-per-second re-renders.
  */
 
-function AnimatedNumber({ value, duration = 1200, suffix = 'ms', color }) {
+interface AnimatedNumberProps {
+  value: number;
+  duration?: number;
+  suffix?: string;
+  color: string;
+}
+
+function AnimatedNumber({ value, duration = 1200, suffix = 'ms', color }: AnimatedNumberProps) {
   const [display, setDisplay] = useState(0);
 
   useEffect(() => {
     let frame = 0;
     const start = performance.now();
 
-    const tick = (now) => {
+    const tick = (now: number) => {
       const progress = Math.min((now - start) / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
       setDisplay(Math.round(value * eased));
@@ -30,16 +39,24 @@ function AnimatedNumber({ value, duration = 1200, suffix = 'ms', color }) {
   }, [value, duration]);
 
   return (
-    <span className="comparison-number" style={{ '--tone': color }}>
+    <span className="comparison-number" style={cssVars({ '--tone': color })}>
       {display}{suffix}
     </span>
   );
 }
 
-function ComparisonBar({ value, maxValue, color, delay, dim }) {
+interface ComparisonBarProps {
+  value: number;
+  maxValue: number;
+  color: string;
+  delay: number;
+  dim?: boolean;
+}
+
+function ComparisonBar({ value, maxValue, color, delay, dim }: ComparisonBarProps) {
   const widthPct = Math.min((value / maxValue) * 100, 100);
   return (
-    <div className={`comparison-bar-track ${dim ? 'dim' : ''}`} style={{ '--tone': color }}>
+    <div className={`comparison-bar-track ${dim ? 'dim' : ''}`} style={cssVars({ '--tone': color })}>
       <motion.div
         className="comparison-bar-fill"
         initial={{ width: 0 }}
@@ -50,8 +67,13 @@ function ComparisonBar({ value, maxValue, color, delay, dim }) {
   );
 }
 
-export default function ComparisonView({ onClose, state }) {
-  const closeRef = useRef(null);
+interface ComparisonViewProps {
+  onClose: () => void;
+  state: SimulationState;
+}
+
+export default function ComparisonView({ onClose, state }: ComparisonViewProps) {
+  const closeRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
 
   const lastAlert = state.activeAlerts[0];
@@ -104,7 +126,7 @@ export default function ComparisonView({ onClose, state }) {
     const previouslyFocused = document.activeElement;
     closeRef.current?.focus();
 
-    const onKeyDown = (e) => {
+    const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
         onClose();

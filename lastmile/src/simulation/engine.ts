@@ -23,6 +23,17 @@ import {
   createBaselineStreams,
   createStressStreams,
 } from './constants';
+import type {
+  Action,
+  Alert,
+  LogEntry,
+  Mode,
+  NodeMap,
+  Priority,
+  SimulationContext,
+  SimulationState,
+  Stream,
+} from './types';
 
 // ── Injected Context ───────────────────────────────────────────
 
@@ -33,7 +44,7 @@ import {
 export function createSimulationContext({
   random = Math.random,
   now = () => Date.now(),
-} = {}) {
+}: { random?: () => number; now?: () => number } = {}): SimulationContext {
   let counter = 0;
   return {
     random,
@@ -55,17 +66,17 @@ export function createSimulationContext({
 // ── Derivations ────────────────────────────────────────────────
 
 /** Whether the stress scenario is currently engaged. */
-export function isStressEngaged(streams) {
+export function isStressEngaged(streams: Stream[]): boolean {
   return streams.some(s => s.id.startsWith('stress-'));
 }
 
 /** Names of every department currently offline. */
-export function offlineNodeNames(nodes) {
+export function offlineNodeNames(nodes: NodeMap): string[] {
   return Object.entries(nodes).filter(([, n]) => !n.active).map(([name]) => name);
 }
 
 /** Fraction of departments still generating traffic, 0..1. */
-export function activeRatio(nodes) {
+export function activeRatio(nodes: NodeMap): number {
   const total = Object.keys(nodes).length;
   if (total === 0) return 0;
   return Object.values(nodes).filter(n => n.active).length / total;
@@ -80,7 +91,7 @@ export function activeRatio(nodes) {
  * themselves, because a department going offline must not be allowed to mask
  * the fact that the network is still under stress.
  */
-export function baseMode(nodes, streams) {
+export function baseMode(nodes: NodeMap, streams: Stream[]): Mode {
   if (offlineNodeNames(nodes).length > 0) return 'failure';
   return isStressEngaged(streams) ? 'stressed' : 'normal';
 }
@@ -90,7 +101,7 @@ export function baseMode(nodes, streams) {
  * Applied after every mutation so no code path can resurrect a stream
  * belonging to a node that is still dark.
  */
-export function withNodeAvailability(streams, nodes) {
+export function withNodeAvailability(streams: Stream[], nodes: NodeMap): Stream[] {
   return streams.map(s => {
     const node = nodes[s.from];
     const permitted = node ? node.active : true;
@@ -100,14 +111,21 @@ export function withNodeAvailability(streams, nodes) {
 
 // ── Latency Model ──────────────────────────────────────────────
 
-export function calculateDeliveryTime(priority, networkLoad, random = Math.random) {
+export function calculateDeliveryTime(
+  priority: Priority,
+  networkLoad: number,
+  random: () => number = Math.random,
+): number {
   const jitter = random() * LATENCY.jitter;
   // P1 rides a protected queue, so its latency is load independent.
   if (priority === 'P1') return Math.round(LATENCY.base.P1 + jitter);
   return Math.round(LATENCY.base[priority] + networkLoad * LATENCY.loadFactor + jitter);
 }
 
-export function calculateUntriagedTime(networkLoad, random = Math.random) {
+export function calculateUntriagedTime(
+  networkLoad: number,
+  random: () => number = Math.random,
+): number {
   return Math.round(
     LATENCY.untriagedBase
     + networkLoad * LATENCY.untriagedLoadFactor
@@ -116,7 +134,7 @@ export function calculateUntriagedTime(networkLoad, random = Math.random) {
 }
 
 /** Load the network is being driven toward, given mode and offline count. */
-export function targetLoad(state, elapsedSeconds) {
+export function targetLoad(state: SimulationState, elapsedSeconds: number): number {
   const stressed = isStressEngaged(state.activeStreams);
 
   let base;
@@ -138,18 +156,18 @@ export function targetLoad(state, elapsedSeconds) {
 
 // ── Log Helpers ────────────────────────────────────────────────
 
-function pushLog(log, entry) {
+function pushLog(log: LogEntry[], entry: LogEntry): LogEntry[] {
   return [entry, ...log].slice(0, MAX_LOG);
 }
 
-function makeEntry(ctx, fields) {
+function makeEntry(ctx: SimulationContext, fields: Omit<LogEntry, 'id' | 'timestamp'>): LogEntry {
   return { id: ctx.nextId('evt'), timestamp: ctx.timestamp(), ...fields };
 }
 
 // ── Initial State ──────────────────────────────────────────────
 
-export function createInitialState() {
-  const nodes = {};
+export function createInitialState(): SimulationState {
+  const nodes: NodeMap = {};
   DEPARTMENT_NODES.forEach(d => {
     nodes[d.label] = { active: true };
   });
@@ -168,12 +186,11 @@ export function createInitialState() {
 
 // ── Reducer ────────────────────────────────────────────────────
 
-/**
- * @param {object} state
- * @param {object} action
- * @param {ReturnType<typeof createSimulationContext>} ctx
- */
-export function reduce(state, action, ctx) {
+export function reduce(
+  state: SimulationState,
+  action: Action,
+  ctx: SimulationContext,
+): SimulationState {
   switch (action.type) {
 
     // Load oscillation. `elapsedSeconds` is supplied by the caller so the
@@ -188,7 +205,7 @@ export function reduce(state, action, ctx) {
       const online = Object.values(state.nodes).filter(n => n.active).length;
       const congested = isStressEngaged(state.activeStreams) || state.mode === 'critical';
 
-      let bandwidthAllocation;
+      let bandwidthAllocation: SimulationState['bandwidthAllocation'];
       if (online === 0) bandwidthAllocation = BANDWIDTH.idle;
       else if (congested) bandwidthAllocation = BANDWIDTH.congested;
       else bandwidthAllocation = BANDWIDTH.normal;
@@ -290,7 +307,7 @@ export function reduce(state, action, ctx) {
       const deliveredIn = calculateDeliveryTime('P1', state.networkLoad, ctx.random);
       const untriagedTime = calculateUntriagedTime(state.networkLoad, ctx.random);
 
-      const alertStream = {
+      const alertStream: Stream = {
         id: `alert-stream-${alertId}`,
         from: def.from,
         to: 'SERVER',
@@ -322,7 +339,7 @@ export function reduce(state, action, ctx) {
         status: 'note',
       }));
 
-      const alert = {
+      const alert: Alert = {
         id: alertId,
         priority: 'P1',
         label: def.label,
@@ -413,7 +430,12 @@ export function reduce(state, action, ctx) {
       };
     }
 
-    default:
+    default: {
+      // Exhaustiveness check: adding a variant to the Action union without
+      // handling it here becomes a compile error rather than a silent no-op.
+      const unhandled: never = action;
+      void unhandled;
       return state;
+    }
   }
 }

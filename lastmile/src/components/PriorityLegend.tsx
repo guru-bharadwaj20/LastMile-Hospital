@@ -1,4 +1,5 @@
 import { PRIORITY_COLORS, SERVER_COLOR } from '../simulation';
+import { cssVars } from '../lib/cssVars';
 
 /**
  * PriorityLegend — Horizontal strip below the map showing priority colour
@@ -20,7 +21,7 @@ export default function PriorityLegend() {
       <div className="legend-title">Priority</div>
       <ul className="legend-items-row">
         {LEGEND_ITEMS.map((item) => (
-          <li key={item.label} className="legend-item" style={{ '--tone': item.color }}>
+          <li key={item.label} className="legend-item" style={cssVars({ '--tone': item.color })}>
             <span className="legend-color" />
             <span>{item.label}</span>
           </li>

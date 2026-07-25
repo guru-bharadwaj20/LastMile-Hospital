@@ -35,3 +35,24 @@ export {
 } from './engine';
 
 export { useNetworkSimulation } from './useNetworkSimulation';
+
+export type {
+  Action,
+  Alert,
+  AlertType,
+  BandwidthAllocation,
+  Department,
+  EventKind,
+  EventStatus,
+  LogEntry,
+  Mode,
+  NodeMap,
+  NodeState,
+  Point,
+  Priority,
+  PriorityRow,
+  SimulationActions,
+  SimulationContext,
+  SimulationState,
+  Stream,
+} from './types';

@@ -15,18 +15,13 @@ export default function NodeFailurePanel({ nodes, actions }) {
         return (
           <motion.div
             key={dept.id}
-            className="node-failure-row"
+            className={`node-failure-row ${isActive ? 'online' : 'offline'}`}
+            style={{ '--tone': color }}
             layout
             transition={{ duration: 0.2 }}
           >
             <div className="node-failure-info">
-              <span
-                className="node-failure-dot"
-                style={{
-                  background: isActive ? color : 'var(--text-dim)',
-                  boxShadow: isActive ? `0 0 6px ${color}66` : 'none',
-                }}
-              />
+              <span className="node-failure-dot" />
               <span className="node-failure-name">{dept.label}</span>
               <motion.span
                 className={`node-failure-badge ${isActive ? 'online' : 'offline'}`}

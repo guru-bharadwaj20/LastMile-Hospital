@@ -71,16 +71,15 @@ export function PriorityConfigurationSection({ state, actions }) {
         {state.priorityConfig.map((item) => {
           const color = PRIORITY_COLORS[item.level];
           return (
-            <tr key={item.id}>
+            <tr key={item.id} style={{ '--tone': color }}>
               <td>
-                <span className="priority-dot" style={{ background: color }} />
+                <span className="priority-dot" />
                 <span className="priority-type">{item.type}</span>
               </td>
               <td className="priority-level">
                 {item.locked ? (
                   <span
                     className="priority-locked"
-                    style={{ color }}
                     title="P1 alerts always use the protected queue and cannot be reassigned"
                   >
                     <Lock size={9} aria-hidden="true" />
@@ -92,7 +91,6 @@ export function PriorityConfigurationSection({ state, actions }) {
                     value={item.level}
                     aria-label={`Priority level for ${item.type}`}
                     onChange={(e) => actions.updatePriorityConfig(item.id, e.target.value)}
-                    style={{ color, borderColor: `${color}44` }}
                   >
                     {PRIORITY_LEVELS.map(level => (
                       <option key={level} value={level}>{level}</option>
@@ -136,16 +134,14 @@ function AlertItem({ alert }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.3 }}
-      style={{ borderLeftColor: color }}
+      style={{ '--tone': color }}
     >
-      <span className="alert-badge" style={{ color, borderColor: `${color}4d`, background: `${color}26` }}>
-        {alert.priority}
-      </span>
+      <span className="alert-badge">{alert.priority}</span>
       <div className="alert-info">
         <div className="alert-desc">{alert.label}</div>
         <div className="alert-meta">
           <span>{formatElapsed(elapsed)} ago</span>
-          <span className="alert-delivered" style={{ color }}>
+          <span className="alert-delivered">
             Delivered in {alert.deliveredIn}ms
           </span>
         </div>

@@ -307,6 +307,19 @@ svg {
   50% { border-color: rgba(255, 45, 45, 0.8); }
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   --tone convention
+
+   Components pass data (a priority colour, a fill level, a share
+   percentage) down as custom properties and nothing else. Every styling
+   decision derived from that data -- alpha levels, glow radii, dimming --
+   lives here rather than being computed in JSX.
+
+   `color-mix` is a progressive enhancement throughout: each rule states a
+   solid fallback first, so a browser without support still gets the right
+   hue rather than nothing.
+   ═══════════════════════════════════════════════════════════════ */
+
 /* ── Hospital Map Styles ────────────────────────────────────── */
 .hospital-map-container {
   flex: 1;
@@ -332,6 +345,21 @@ svg {
 
 .dept-rect:hover {
   fill: rgba(17, 24, 39, 0.9);
+}
+
+.dept-group.is-offline .dept-rect {
+  fill: rgba(17, 24, 39, 0.3);
+  opacity: 0.5;
+}
+
+.dept-group.is-offline .dept-label {
+  fill: var(--text-dim);
+  opacity: 0.5;
+}
+
+.dept-group.is-offline .dept-sublabel {
+  fill: var(--text-dim);
+  opacity: 0.4;
 }
 
 .dept-label {
@@ -402,6 +430,10 @@ svg {
 .network-edge.active {
   opacity: 0.7;
   stroke-width: 2;
+}
+
+.network-edge.inactive {
+  opacity: 0.15;
 }
 
 /* ── Critical Warning Banner ───────────────────────────────── */
@@ -499,6 +531,10 @@ svg {
   height: 100%;
   border-radius: 4px;
   transform-origin: bottom;
+  transform: scaleY(var(--level, 0));
+  background: var(--tone, var(--p4-low));
+  box-shadow: 0 0 8px var(--tone, var(--p4-low));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--tone, var(--p4-low)) 40%, transparent);
   transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), background 0.4s ease;
 }
 
@@ -508,6 +544,7 @@ svg {
   font-family: 'JetBrains Mono', monospace;
   font-weight: 700;
   text-align: center;
+  color: var(--tone, var(--p4-low));
   transition: color 0.4s ease;
 }
 
@@ -572,6 +609,7 @@ svg {
   height: 5px;
   border-radius: 50%;
   flex-shrink: 0;
+  background: var(--tone);
 }
 
 .priority-bar-track {
@@ -584,6 +622,8 @@ svg {
 
 .priority-bar-fill {
   height: 100%;
+  width: var(--share, 0%);
+  background: var(--tone);
   border-radius: 2px;
   transition: width 0.6s ease;
 }
@@ -698,13 +738,14 @@ svg {
   padding: 10px 12px;
   background: var(--bg-primary);
   border: 1px solid var(--border);
-  border-left: 3px solid var(--p1-critical);
+  border-left: 3px solid var(--tone, var(--p1-critical));
   border-radius: 4px;
   margin-bottom: 6px;
 }
 
 .alert-delivered {
   font-weight: 700;
+  color: var(--tone, var(--p1-critical));
 }
 
 .alert-untriaged {
@@ -724,6 +765,10 @@ svg {
   text-transform: uppercase;
   white-space: nowrap;
   flex-shrink: 0;
+  color: var(--tone, var(--p1-critical));
+  border: 1px solid var(--tone, var(--p1-critical));
+  border-color: color-mix(in srgb, var(--tone, var(--p1-critical)) 30%, transparent);
+  background: color-mix(in srgb, var(--tone, var(--p1-critical)) 15%, transparent);
 }
 
 .alert-info {
@@ -767,6 +812,7 @@ svg {
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+  background: var(--tone);
 }
 
 .priority-type {
@@ -782,7 +828,9 @@ svg {
 
 .priority-select {
   background: var(--bg-primary);
-  border: 1px solid var(--border);
+  color: var(--tone);
+  border: 1px solid var(--tone);
+  border-color: color-mix(in srgb, var(--tone) 27%, transparent);
   border-radius: 3px;
   padding: 2px 4px;
   font-family: 'Rajdhani', sans-serif;
@@ -799,6 +847,7 @@ svg {
   align-items: center;
   gap: 4px;
   font-size: 11px;
+  color: var(--tone);
   opacity: 0.75;
   cursor: help;
 }
@@ -909,12 +958,14 @@ svg {
   font-weight: 700;
   font-size: 10px;
   letter-spacing: 1px;
+  color: var(--tone, var(--text-dim));
 }
 
 .event-priority-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
+  background: var(--tone, var(--text-dim));
 }
 
 .event-desc {
@@ -1023,6 +1074,9 @@ svg {
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+  background: var(--tone);
+  box-shadow: 0 0 4px var(--tone);
+  box-shadow: 0 0 4px color-mix(in srgb, var(--tone) 27%, transparent);
 }
 
 /* ── Header Styles ──────────────────────────────────────────── */
@@ -1326,6 +1380,17 @@ svg {
   transition: all 0.3s ease;
 }
 
+.node-failure-row.online .node-failure-dot {
+  background: var(--tone);
+  box-shadow: 0 0 6px var(--tone);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--tone) 40%, transparent);
+}
+
+.node-failure-row.offline .node-failure-dot {
+  background: var(--text-dim);
+  box-shadow: none;
+}
+
 .node-failure-name {
   font-family: 'Rajdhani', sans-serif;
   font-weight: 600;
@@ -1540,6 +1605,7 @@ svg {
 .comparison-number {
   font-family: 'JetBrains Mono', monospace;
   font-weight: 700;
+  color: var(--tone, inherit);
 }
 
 .comparison-bar-track {
@@ -1557,6 +1623,11 @@ svg {
 .comparison-bar-fill {
   height: 100%;
   border-radius: 4px;
+  background: var(--tone);
+}
+
+.comparison-bar-track.dim .comparison-bar-fill {
+  opacity: 0.5;
 }
 
 .comparison-metric-note {

@@ -20,11 +20,8 @@ export default function PriorityLegend() {
       <div className="legend-title">Priority</div>
       <ul className="legend-items-row">
         {LEGEND_ITEMS.map((item) => (
-          <li key={item.label} className="legend-item">
-            <span
-              className="legend-color"
-              style={{ background: item.color, boxShadow: `0 0 4px ${item.color}44` }}
-            />
+          <li key={item.label} className="legend-item" style={{ '--tone': item.color }}>
+            <span className="legend-color" />
             <span>{item.label}</span>
           </li>
         ))}

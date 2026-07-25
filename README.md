@@ -110,7 +110,7 @@ quotes p99 rather than an average, and what a run does and does not establish.
 
 ## Simulation Parameters — Dashboard
 
-The dashboard is a model, not a measurement. The latency figures it displays are produced by a deterministic formula in [`lastmile/src/simulation/networkState.js`](lastmile/src/simulation/networkState.js):
+The dashboard is a model, not a measurement. The latency figures it displays are produced by a deterministic formula in [`lastmile/src/simulation/engine.ts`](lastmile/src/simulation/engine.ts), with the constants declared in [`constants.ts`](lastmile/src/simulation/constants.ts):
 
 ```
 delivery_time(P1)     = 8 ms + jitter          // protected queue, load independent
@@ -434,6 +434,19 @@ mininet> sh ovs-ofctl -O OpenFlow13 dump-flows s1
 3. **Replace simulation constants with measured data** so the dashboard reports real numbers.
 4. **Controller REST + server sent events**, with the browser simulation retained as an offline demo mode.
 5. **Containerised reproduction** so the whole stack starts with one command.
+
+---
+
+## Documentation
+
+| Document | Covers |
+|---|---|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System diagrams, design decisions and their trade-offs, what breaks at scale, threat model |
+| [docs/DEMO.md](docs/DEMO.md) | Regenerating the README visuals |
+| [SDN_files/README.md](SDN_files/README.md) | QoS policy, running the controllers, test scenarios |
+| [results/README.md](results/README.md) | Benchmark CSV schema and what a run does not establish |
+| [docker/README.md](docker/README.md) | Containers, platform requirements, troubleshooting |
+| [lastmile/README.md](lastmile/README.md) | Dashboard structure and simulation internals |
 
 ---
 

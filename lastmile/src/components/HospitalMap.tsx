@@ -7,6 +7,7 @@ import {
   getRoomCenter,
   getNodeCenter,
 } from '../simulation';
+import type { NodeMap } from '../simulation';
 
 /**
  * HospitalMap — SVG hospital floor plan with department rooms,
@@ -15,7 +16,11 @@ import {
  * Shares MAP_VIEWBOX and the geometry helpers with TrafficStream so the
  * particle layer stays registered to the nodes at every viewport size.
  */
-export default function HospitalMap({ nodes }) {
+interface HospitalMapProps {
+  nodes: NodeMap;
+}
+
+export default function HospitalMap({ nodes }: HospitalMapProps) {
   const serverNode = getNodeCenter(SERVER);
 
   return (

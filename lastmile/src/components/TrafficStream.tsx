@@ -9,6 +9,7 @@ import {
   departmentColor,
   getNodeCenter,
 } from '../simulation';
+import type { Stream } from '../simulation';
 
 // Module scope: derived once from a static table, so the effect below needs
 // no dependency on it and cannot go stale.
@@ -20,7 +21,7 @@ const SERVER_NODE = getNodeCenter(SERVER);
  * changes. Without this, either every state tick restarts every particle,
  * or property changes are silently ignored.
  */
-function signatureOf(stream) {
+function signatureOf(stream: Stream): string {
   return [
     stream.from,
     stream.priority,
@@ -30,7 +31,7 @@ function signatureOf(stream) {
   ].join('|');
 }
 
-function radiusFor(stream) {
+function radiusFor(stream: Stream): number {
   if (stream.isAlertParticle) return 6;
   const rank = PRIORITY_RANK[stream.priority] ?? 5;
   if (rank === 1) return 4;
@@ -38,7 +39,7 @@ function radiusFor(stream) {
   return 2.5;
 }
 
-function opacityFor(stream) {
+function opacityFor(stream: Stream): number {
   if (stream.isAlertParticle) return 1;
   return (PRIORITY_RANK[stream.priority] ?? 5) <= 2 ? 0.85 : 0.6;
 }
@@ -49,9 +50,19 @@ function opacityFor(stream) {
  * Each stream owns a <g> group, which is how it is torn down. That avoids
  * building CSS class selectors out of generated ids entirely.
  */
-export default function TrafficStream({ activeStreams }) {
-  const svgRef = useRef(null);
-  const runningRef = useRef(new Map()); // id -> { token, group, signature }
+interface TrafficStreamProps {
+  activeStreams: Stream[];
+}
+
+interface RunningStream {
+  token: { cancelled: boolean };
+  group: d3.Selection<SVGGElement, unknown, null, undefined>;
+  signature: string;
+}
+
+export default function TrafficStream({ activeStreams }: TrafficStreamProps) {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const runningRef = useRef<Map<string, RunningStream>>(new Map());
 
   useEffect(() => {
     if (!svgRef.current) return;
@@ -62,7 +73,7 @@ export default function TrafficStream({ activeStreams }) {
       activeStreams.filter(s => s.active && DEPT_BY_LABEL.has(s.from)).map(s => [s.id, s]),
     );
 
-    const stop = (id, entry) => {
+    const stop = (id: string, entry: RunningStream) => {
       entry.token.cancelled = true;
       entry.group.selectAll('circle').interrupt();
       entry.group.remove();
@@ -80,6 +91,8 @@ export default function TrafficStream({ activeStreams }) {
       if (running.has(id)) continue;
 
       const dept = DEPT_BY_LABEL.get(stream.from);
+      if (!dept) continue;
+
       const from = getNodeCenter(dept);
       const to = SERVER_NODE;
       const color = PRIORITY_COLORS[stream.priority] || departmentColor(dept);

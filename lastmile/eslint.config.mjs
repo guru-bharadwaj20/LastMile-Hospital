@@ -3,14 +3,16 @@ import globals from 'globals'
 import react from 'eslint-plugin-react'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
+import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', 'coverage']),
   {
-    files: ['**/*.{js,jsx}'],
+    files: ['**/*.{ts,tsx}'],
     extends: [
       js.configs.recommended,
+      ...tseslint.configs.recommended,
       // Supplies react/jsx-uses-vars, without which any lowercase identifier
       // used only inside JSX (e.g. `motion` in <motion.div>) is falsely
       // reported as an unused variable by no-unused-vars.
@@ -32,9 +34,14 @@ export default defineConfig([
       react: { version: 'detect' },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
-      // The codebase documents props inline rather than via prop-types.
+      // Types are declared in types.ts; prop-types would duplicate them.
       'react/prop-types': 'off',
+      // Base rule is superseded by the TypeScript-aware version.
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': ['error', {
+        varsIgnorePattern: '^[A-Z_]',
+        argsIgnorePattern: '^_',
+      }],
     },
   },
 ])

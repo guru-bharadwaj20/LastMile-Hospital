@@ -10,10 +10,9 @@ import sys
 
 from ryu.base import app_manager
 from ryu.controller import ofp_event
-from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
-from ryu.controller.handler import set_ev_cls
+from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER, set_ev_cls
+from ryu.lib.packet import arp, ethernet, packet
 from ryu.ofproto import ofproto_v1_3
-from ryu.lib.packet import packet, ethernet, arp
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -24,7 +23,7 @@ class StaticRouter(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
 
     def __init__(self, *args, **kwargs):
-        super(StaticRouter, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.static_flows = STATIC_FLOWS
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)

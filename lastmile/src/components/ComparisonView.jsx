@@ -30,7 +30,7 @@ function AnimatedNumber({ value, duration = 1200, suffix = 'ms', color }) {
   }, [value, duration]);
 
   return (
-    <span className="comparison-number" style={{ color }}>
+    <span className="comparison-number" style={{ '--tone': color }}>
       {display}{suffix}
     </span>
   );
@@ -39,13 +39,12 @@ function AnimatedNumber({ value, duration = 1200, suffix = 'ms', color }) {
 function ComparisonBar({ value, maxValue, color, delay, dim }) {
   const widthPct = Math.min((value / maxValue) * 100, 100);
   return (
-    <div className={`comparison-bar-track ${dim ? 'dim' : ''}`}>
+    <div className={`comparison-bar-track ${dim ? 'dim' : ''}`} style={{ '--tone': color }}>
       <motion.div
         className="comparison-bar-fill"
         initial={{ width: 0 }}
         animate={{ width: `${widthPct}%` }}
         transition={{ duration: 0.8, delay, ease: [0.4, 0, 0.2, 1] }}
-        style={{ background: color, opacity: dim ? 0.5 : 1 }}
       />
     </div>
   );

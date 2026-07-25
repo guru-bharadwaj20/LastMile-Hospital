@@ -36,16 +36,9 @@ export default function NetworkLoadMeter({ state }) {
 
       {/* Gauge and its scale share a grid row, so the tick labels line up
           with the track instead of stacking underneath it. */}
-      <div className="load-meter-gauge">
+      <div className="load-meter-gauge" style={{ '--tone': fillColor, '--level': clamped / 100 }}>
         <div className={`load-meter-bar-track ${isHighLoad ? 'high' : ''}`}>
-          <div
-            className="load-meter-bar-fill"
-            style={{
-              transform: `scaleY(${clamped / 100})`,
-              background: fillColor,
-              boxShadow: `0 0 8px ${fillColor}66`,
-            }}
-          />
+          <div className="load-meter-bar-fill" />
         </div>
 
         <div className="load-meter-ticks" aria-hidden="true">
@@ -59,7 +52,7 @@ export default function NetworkLoadMeter({ state }) {
           track's overflow at 0% or 100%. */}
       <div
         className="load-meter-readout"
-        style={{ color: fillColor }}
+        style={{ '--tone': fillColor }}
         role="meter"
         aria-valuenow={clamped}
         aria-valuemin={0}
@@ -72,13 +65,14 @@ export default function NetworkLoadMeter({ state }) {
       <div className="load-meter-breakdown">
         <div className="load-meter-breakdown-title">BW SHARE</div>
         {BANDS.map(({ level, key }) => (
-          <div key={level} className="priority-bar-row">
-            <div className="priority-bar-dot" style={{ background: PRIORITY_COLORS[level] }} />
+          <div
+            key={level}
+            className="priority-bar-row"
+            style={{ '--tone': PRIORITY_COLORS[level], '--share': `${bw[key]}%` }}
+          >
+            <div className="priority-bar-dot" />
             <div className="priority-bar-track">
-              <div
-                className="priority-bar-fill"
-                style={{ width: `${bw[key]}%`, background: PRIORITY_COLORS[level] }}
-              />
+              <div className="priority-bar-fill" />
             </div>
           </div>
         ))}

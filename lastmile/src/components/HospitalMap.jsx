@@ -55,14 +55,13 @@ export default function HospitalMap({ nodes }) {
           return (
             <line
               key={`edge-${dept.id}`}
-              className={`network-edge ${isActive ? 'active' : ''}`}
+              className={`network-edge ${isActive ? 'active' : 'inactive'}`}
               x1={from.x}
               y1={from.y}
               x2={serverNode.x}
               y2={serverNode.y}
               stroke={isActive ? departmentColor(dept) : 'var(--text-dim)'}
               strokeDasharray="4 4"
-              style={{ opacity: isActive ? undefined : 0.15 }}
             />
           );
         })}
@@ -83,7 +82,7 @@ export default function HospitalMap({ nodes }) {
           ];
 
           return (
-            <g key={dept.id}>
+            <g key={dept.id} className={`dept-group ${isActive ? 'is-online' : 'is-offline'}`}>
               <rect
                 className="dept-rect"
                 x={dept.x}
@@ -92,7 +91,6 @@ export default function HospitalMap({ nodes }) {
                 height={dept.h}
                 stroke={strokeColor}
                 strokeOpacity={isServer ? 0.6 : isActive ? 0.4 : 0.15}
-                style={!isActive ? { fill: 'rgba(17, 24, 39, 0.3)', opacity: 0.5 } : undefined}
               />
 
               {corners.map(([x, y, dx, dy], i) => (
@@ -104,12 +102,7 @@ export default function HospitalMap({ nodes }) {
                 />
               ))}
 
-              <text
-                className="dept-label"
-                x={center.x}
-                y={center.y - (isServer ? 14 : 8)}
-                style={!isActive ? { fill: 'var(--text-dim)', opacity: 0.5 } : undefined}
-              >
+              <text className="dept-label" x={center.x} y={center.y - (isServer ? 14 : 8)}>
                 {dept.label}
               </text>
 
@@ -118,12 +111,7 @@ export default function HospitalMap({ nodes }) {
                   NETWORK HUB
                 </text>
               ) : (
-                <text
-                  className="dept-sublabel"
-                  x={center.x}
-                  y={center.y + 8}
-                  style={!isActive ? { fill: 'var(--text-dim)', opacity: 0.4 } : undefined}
-                >
+                <text className="dept-sublabel" x={center.x} y={center.y + 8}>
                   {isActive ? `${dept.baselinePriority} BASELINE` : 'OFFLINE'}
                 </text>
               )}

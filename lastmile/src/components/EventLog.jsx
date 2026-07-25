@@ -56,16 +56,17 @@ export default function EventLog({ eventLog, onShowComparison }) {
               <motion.div
                 key={event.id}
                 className={`event-entry kind-${event.kind ?? 'traffic'} ${isCritical ? 'critical-flash' : ''}`}
+                style={{ '--tone': color }}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
               >
                 <span className="event-time">[{event.timestamp}]</span>
-                <span className="event-priority" style={{ color }}>
+                <span className="event-priority">
                   {event.priority ? (
                     <>
-                      <span className="event-priority-dot" style={{ background: color }} />
+                      <span className="event-priority-dot" />
                       {event.priority}
                     </>
                   ) : (

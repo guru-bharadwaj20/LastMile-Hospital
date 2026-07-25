@@ -1,4 +1,4 @@
-import { PRIORITY_COLORS } from '../simulation/networkState';
+import { PRIORITY_COLORS } from '../simulation';
 
 const TICKS = [100, 80, 60, 40, 20, 0];
 

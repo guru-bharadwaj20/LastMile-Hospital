@@ -1,4 +1,4 @@
-import { PRIORITY_COLORS, SERVER_COLOR } from '../simulation/networkState';
+import { PRIORITY_COLORS, SERVER_COLOR } from '../simulation';
 
 /**
  * PriorityLegend — Horizontal strip below the map showing priority colour

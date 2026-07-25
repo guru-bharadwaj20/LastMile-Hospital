@@ -9,7 +9,7 @@ import EventLog from './components/EventLog';
 import PriorityLegend from './components/PriorityLegend';
 import NodeFailurePanel from './components/NodeFailurePanel';
 import ComparisonView from './components/ComparisonView';
-import { useNetworkSimulation } from './simulation/networkState';
+import { useNetworkSimulation } from './simulation';
 
 /**
  * App — Main application layout for LastMile Hospital Network Triage System.

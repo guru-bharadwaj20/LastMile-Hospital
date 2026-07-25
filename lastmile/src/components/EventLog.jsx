@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PRIORITY_COLORS } from '../simulation/networkState';
+import { PRIORITY_COLORS } from '../simulation';
 
 const STATUS_LABEL = {
   delivered: '✓ DELIVERED',

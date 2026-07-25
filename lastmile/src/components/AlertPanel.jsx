@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Activity, Zap, Wifi, RotateCcw, Lock } from 'lucide-react';
-import { PRIORITY_COLORS } from '../simulation/networkState';
+import { PRIORITY_COLORS, PRIORITY_LEVELS } from '../simulation';
 
 /**
  * AlertPanel — Sidebar sections: emergency console, active alerts,
@@ -15,8 +15,6 @@ const TRIGGERS = [
   { id: 'stress',     label: 'Simulate Network Stress',         className: 'stress',   icon: Wifi,          action: 'simulateStress' },
   { id: 'reset',      label: 'Reset Network',                   className: 'reset',    icon: RotateCcw,     action: 'resetNetwork' },
 ];
-
-const PRIORITY_LEVELS = ['P1', 'P2', 'P3', 'P4', 'P5'];
 
 export function EmergencyConsoleSection({ state, actions }) {
   const isStressed = state.activeStreams.some(s => s.id.startsWith('stress-'));

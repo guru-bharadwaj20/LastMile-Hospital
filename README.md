@@ -1,5 +1,6 @@
 # LastMile Hospital Network Triage System
 
+[![CI](https://github.com/guru-bharadwaj20/LastMile-Hospital/actions/workflows/ci.yml/badge.svg)](https://github.com/guru-bharadwaj20/LastMile-Hospital/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](LICENSE)
 [![React](https://img.shields.io/badge/React-19.2-38bdf8.svg)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-8.0-a855f7.svg)](https://vitejs.dev/)
@@ -218,11 +219,40 @@ npm run preview   # serves dist/ at http://localhost:4173
 
 Use `npm run preview` (or any static file server) to view the build. Opening `dist/index.html` straight off the filesystem with a `file://` URL will not work, because the bundle requests its assets over HTTP.
 
-### Linting
+### Checks
 
 ```bash
-npm run lint
+npm run lint        # ESLint
+npm run typecheck   # tsc --noEmit
+npm run test        # Vitest, 60 tests
 ```
+
+---
+
+## Testing
+
+| Suite | Location | Count | Requires |
+|---|---|---|---|
+| Simulation engine | `lastmile/src/simulation/engine.test.ts` | 35 | nothing — the reducer is pure |
+| Components | `lastmile/src/components/components.test.tsx` | 14 | jsdom |
+| App integration | `lastmile/src/App.test.tsx` | 11 | jsdom |
+| Topology | `SDN_files/tests/test_topology.py` | 15 | nothing |
+| Flow table | `SDN_files/tests/test_flow_table.py` | 32 | nothing |
+
+```bash
+cd lastmile   && npm ci && npm run test
+cd SDN_files  && pip install -r requirements-dev.txt && pytest
+```
+
+The forwarding table is derived from `topology.py` rather than hand written,
+and `topology.py`/`flow_table.py` import neither Ryu nor Mininet. The routing
+logic is therefore verified in CI on plain Python, with no Open vSwitch, no
+Linux kernel and no root. Tests walk the table exactly as a packet would,
+asserting that all twelve ordered host pairs are reachable by a shortest path
+with no blackholes, loops, or ambiguous matches.
+
+`regression_test.py` is the exception: it drives real switches and must run on
+the Mininet host from the Mininet CLI.
 
 ---
 

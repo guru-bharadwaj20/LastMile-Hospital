@@ -1,4 +1,4 @@
-# LastMile Hospital Network Triage System
+# LastMile Hospital
 
 [![CI](https://github.com/guru-bharadwaj20/LastMile-Hospital/actions/workflows/ci.yml/badge.svg)](https://github.com/guru-bharadwaj20/LastMile-Hospital/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](LICENSE)

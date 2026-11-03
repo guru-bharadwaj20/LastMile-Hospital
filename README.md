@@ -1,5 +1,13 @@
 # LastMile Hospital
 
+<p align="center">
+  <a href="LastMile-Hospital%20Demo.mp4">
+    <img src="docs/LastMile-Hospital%20Demo%20thumbnail.png" alt="Watch the LastMile-Hospital demo video" width="720">
+  </a>
+  <br>
+  <sub>▶ <b><a href="LastMile-Hospital%20Demo.mp4">Watch the LastMile-Hospital demo</a></b> (74 s): the April build, the July rebuild, CI, then the QoS controller on Mininet and the dashboard, run for real</sub>
+</p>
+
 **Hospitals triage patients by urgency. LastMile triages packets the same way — an SDN controller that puts a cardiac alert ahead of a radiology upload.**
 
 [![CI](https://github.com/guru-bharadwaj20/LastMile-Hospital/actions/workflows/ci.yml/badge.svg)](https://github.com/guru-bharadwaj20/LastMile-Hospital/actions/workflows/ci.yml)
